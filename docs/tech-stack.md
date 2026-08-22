@@ -1,0 +1,283 @@
+# ちいかわ 굿즈 알리미 — 기술 선정서
+
+| 항목 | 내용 |
+| --- | --- |
+| 문서 상태 | **초안 (draft)** |
+| 버전 | v0.1 |
+| 상위 문서 | [[plan-draft]] (제품 기획) |
+| 관련 문서 | [[data-collection-design]] (수집·데이터 설계) |
+| 범위 | 기술 선정과 그 근거. **구현 코드 미포함** |
+
+---
+
+## 0. 선정 기준
+
+우선순위 순서다. 아래로 갈수록 약한 기준이다.
+
+1. **`tomomachi` 스택을 재사용한다.** 1인 개발이다. 새 기술을 배우는 시간은 어댑터를 늘리는 시간에서 빠진다.
+2. **무수익 전제([[plan-draft]] §2.3)에서 고정비를 최소화한다.** 유휴 시 과금되는 리소스를 늘리지 않는다.
+3. **운영 규범([[plan-draft]] §2.2)을 기술로 강제할 수 있어야 한다.** 중복 실행·동시 요청 폭주가 구조적으로 불가능해야 한다.
+4. **이전 가능성을 유지한다.** 무료 크레딧 소진 후 다른 곳으로 옮길 수 있어야 한다.
+
+---
+
+## 1. 확정 스택
+
+### 1.1 애플리케이션
+
+| 층 | 선정 | 버전 | 근거 |
+| --- | --- | --- | --- |
+| 언어 | TypeScript | 5.x | `tomomachi` 동일 |
+| 런타임 | Node.js (volta 고정) | 22.18.0 | `tomomachi` 동일 버전 |
+| 프레임워크 | NestJS | 11 | `tomomachi` 동일 |
+| 배치 진입점 | `nest-commander` | 3.x | 어댑터 1개 = provider 1개. `tomomachi`의 `src/batch/` 패턴 |
+| ORM | TypeORM | 0.3 | `tomomachi` 동일. **migration-driven, `synchronize: false`** |
+| DB 드라이버 | `pg` | 8.x | 표준 Postgres |
+| 검증 | `class-validator` + `class-transformer` | — | `tomomachi` 동일 |
+| 로깅 | `winston` + `nest-winston` | — | **`winston-daily-rotate-file` 제외** (§1.4) |
+| 테스트 | Jest + `ts-jest` | — | `tomomachi` 동일 |
+| 린트 | ESLint 9 + Prettier + `simple-import-sort` | — | `tomomachi` 동일 |
+
+### 1.2 프론트엔드 (v0부터)
+
+| 층 | 선정 | 근거 |
+| --- | --- | --- |
+| 프레임워크 | Next.js 16 (App Router) + React 19 | `tomomachi-fe` 동일 |
+| 스타일 | Tailwind CSS 4 + `clsx` + `tailwind-merge` | `tomomachi-fe` 동일 |
+| 서버 상태 | TanStack Query 5 | `tomomachi-fe` 동일 |
+| 스키마 | zod 4 | `tomomachi-fe` 동일 |
+| 빌드 | `output: 'standalone'` + Dockerfile | Cloud Run 배포. `tomomachi-fe` 동일 |
+| **제외** | `zustand` | 서버 상태만 다룬다. 클라이언트 전역 상태 없음 |
+| **제외** | Firebase Auth | 로그인이 없다 ([[plan-draft]] §1.4). v1 웹 푸시 구독도 익명 |
+
+> **v0부터 공개 화면이 있다.** 읽기 전용 2섹션 ([[plan-draft]] §8).
+> 도메인·약관·삭제요청 창구가 v0 착수 조건이 된다 ([[plan-draft]] §8.1).
+
+### 1.3 인프라
+
+| 층 | 선정 | 근거 |
+| --- | --- | --- |
+| 클라우드 | **GCP (신규 프로젝트)** | `tomomachi`와 과금·장애 격리 |
+| IaC | Terraform | `tomomachi-infra` 모듈 재사용 |
+| 컨테이너 레지스트리 | Artifact Registry | 동일 |
+| 배치 실행 | **Cloud Run Job** | 수집기. 외부 호출 표면 없음. 유휴 과금 0 |
+| 웹 | **Cloud Run Service** (공개) + 커스텀 도메인 매핑 | v0부터. 수집기와 **별도 서비스** |
+| 스케줄 | **Cloud Scheduler** (`time_zone: Asia/Tokyo`) | 타임존 직접 지정 |
+| DB | **Cloud SQL for PostgreSQL** `db-f1-micro` | RDB 1개 통합 보관 |
+| DB 접속 | `/cloudsql` **Unix 소켓 볼륨 마운트** | `tomomachi`의 Job과 동일 방식 |
+| 시크릿 | Secret Manager (**껍데기만 IaC, 값은 수동**) | `tomomachi` 규약 |
+| CI/CD | GitHub Actions + Workload Identity Federation | 서비스 계정 키 파일 미사용 |
+| 리전 | `asia-northeast1` (도쿄) | 대상 사이트가 전부 일본 |
+
+### 1.4 재사용 가능 여부 정리
+
+`tomomachi-infra`에서 그대로 가져오는 것과 새로 짜야 하는 것.
+
+| 모듈 | 상태 |
+| --- | --- |
+| `apis` / `artifact-registry` / `iam` / `workload-identity` / `secret-manager` | ✅ 재사용 |
+| `cloud-sql` | ✅ 재사용 (`db-f1-micro`, `PD_SSD`, `disk_autoresize` — §4.2 주의) |
+| `cloud-run` | ⚠️ 부분 재사용. `google_cloud_run_v2_job` 선례 있음 (`area-import-job`) |
+| **`cloud-scheduler`** | ❌ **없음. 신규 작성** |
+| `cloud-storage` | 미사용 (이미지 호스팅 안 함) |
+
+애플리케이션 쪽에서 안 가져오는 것: Firebase Admin, Google Maps / Vision, `adm-zip`, `csv-parse`, `@nestjs/swagger`(v0에 HTTP API 없음), `winston-daily-rotate-file`.
+
+---
+
+## 2. 선정 근거
+
+### 2.1 클라우드는 GCP
+
+`tomomachi`의 NestJS + TypeORM + Terraform 자산이 그대로 살아난다. 1인 개발에서 이 이득이 가장 크다.
+
+Cloudflare Workers는 런타임이 달라 NestJS를 올릴 수 없다 — 스택을 새로 짜야 한다.
+Workers를 고려할 유일한 이유였던 "분 단위 cron"은 Cloud Scheduler가 타임존까지 포함해 해결한다.
+
+**대가**: D1(무료) 대신 Cloud SQL(유료). 크레딧 만료 후 고정비가 남는다 → §2.6
+
+---
+
+### 2.2 스케줄은 Cloud Scheduler → Cloud Run Job
+
+**선택지 3개**
+
+| | 방식 | 유휴 비용 | 스케줄 정의 |
+| --- | --- | --- | --- |
+| A | **Scheduler → Cloud Run Job** ← 채택 | 0 | Terraform |
+| B | Scheduler → Cloud Run Service HTTP 엔드포인트 | 0 | Terraform |
+| C | Cloud Run Service 상주 + `@nestjs/schedule` | **상시 과금** | 코드 |
+
+**C를 쓰지 않는 이유 — 비용이 아니라 중복 실행이다**
+
+`@nestjs/schedule`은 `setInterval` 계열이라 조건 2개가 필요하다.
+
+1. 프로세스 상주 — Cloud Run은 요청이 없으면 인스턴스를 0으로 내린다. 인스턴스가 죽으면 타이머도 죽는다
+2. CPU 상시 할당 — 기본값은 요청 처리 중에만 CPU를 준다. 유휴 중 throttle되면 타이머가 제때 깨지 않는다
+
+둘을 켜면 `min-instances ≥ 1` + CPU 상시 할당 = **상시 과금**이고, scale-to-zero 이점을 버린다.
+게다가 인스턴스가 2개로 늘면 **cron이 2번 발화한다.** 수집기가 2번 돌면 대상 서버에 2배 부하가 간다 —
+**운영 규범([[plan-draft]] §2.2)을 직접 깬다.** 막으려면 분산 락이나 `max-instances=1` 고정이 필요하다.
+
+C의 장점은 "스케줄 추가가 코드 변경만으로 끝난다"이지만, 락으로 규범 위반을 막는 비용이 그 이점을 넘는다.
+
+**B가 아니라 A인 이유**
+
+B는 IAM이 단순하지만(OIDC 토큰 + `run.invoker`) **수집기를 기동하는 표면을 공개 인터넷에 둔다.**
+인증이 새는 순간 아무나 수집기를 돌릴 수 있고, 그건 다시 규범 위반이다.
+Job은 애초에 외부에서 호출할 표면이 없다.
+
+v0부터 공개 웹이 있지만 그건 **읽기 전용 별도 Cloud Run Service**다. 수집기 Job과 배포·권한이 분리된다.
+
+**A의 대가**: Cloud Run Admin API `:run` 호출 경로 + 서비스 계정 IAM을 짜야 한다. `tomomachi`에 선례가 없다.
+
+**부수 규칙**: `@nestjs/schedule`은 **로컬 개발 편의용으로만** 허용한다. 프로덕션 스케줄은 전부 Terraform에 있다.
+
+---
+
+### 2.3 수집기 진입점은 `nest-commander` CLI
+
+Cloud Run Job은 컨테이너를 실행하고 끝난다. 진입점이 CLI 커맨드면 그대로 매핑된다.
+
+- 어댑터 1개 = NestJS provider 1개. 어댑터 계약([[data-collection-design]] §4)이 DI로 그대로 표현됨
+- 소스 단위 실패 격리를 커맨드 인자로 구현 — 특정 어댑터만 실행 가능
+- `tomomachi`의 `src/batch/` 패턴과 동일하므로 판단할 게 없다
+- 로컬에서 한 줄로 재현 가능. 수집기 디버깅이 배포와 무관해진다
+
+---
+
+### 2.4 PostgreSQL + TypeORM, migration-driven
+
+RDB 1개에 전부 보관한다. `mention` · `item` · `drop` · `status_history` · `merge_override`가
+전부 조인 대상이고, 중복 제거([[data-collection-design]] §9)가 SQL로 표현된다.
+
+**규약** (`tomomachi` 계승)
+
+- `synchronize: false`. entity를 직접 고쳐서 반영하지 않는다
+- 스키마 변경은 항상 migration. 생성된 SQL을 눈으로 확인하고 적용
+- naming strategy는 `typeorm-naming-strategies` (snake_case)
+
+**Cloud SQL 고유 기능은 쓰지 않는다.** 표준 Postgres 범위 내로 유지 → §2.6
+
+---
+
+### 2.5 public 단일 저장소
+
+```
+chiikawa-goods/
+├── docs/    설계 문서
+├── be/      NestJS 수집기
+├── fe/      Next.js
+└── infra/   Terraform
+```
+
+`tomomachi`는 repo를 4개로 분할하지만 개인 규모에서는 오버헤드다. 필요해지면 그때 분리한다.
+public으로 두는 이유는 **운영 규범이 요구하는 연락처 URL**이다 — 저장소가 창구를 겸한다.
+
+> [!warning] public이므로 커밋 규칙이 `tomomachi`와 다르다
+> **공개를 허용하는 것**: GCP 프로젝트 ID, 서비스 계정 이메일, Cloud SQL 인스턴스명, 리소스 구성.
+> 자격 증명이 아니다.
+>
+> **절대 커밋하지 않는 것**: `terraform.tfvars`, Terraform state, 서비스 계정 키,
+> DB 비밀번호, Discord Webhook URL, 대상 사이트 인증 정보.
+>
+> Secret Manager는 **껍데기만 Terraform으로 만들고 값은 수동 투입**한다 (`tomomachi` 규약).
+> `.gitignore`를 첫 커밋에 포함한다.
+
+---
+
+### 2.6 이전 가능성은 설계 요건이다
+
+GCP 무료 크레딧은 **$300 / 90일**. Cloud Run은 scale-to-zero라 거의 0이고,
+**비용은 사실상 Cloud SQL 전부다** (상시 과금 + 스토리지 + IP).
+
+크레딧 만료 시 선택지는 (a) 자기 부담 (b) 무료 티어 외부 Postgres 이전 (c) 종료.
+**(b)를 열어 두는 것이 설계 요건이다.** 요건 2개:
+
+**1. 접속 방식을 환경변수로 추상화한다**
+
+Cloud SQL은 `/cloudsql` **Unix 소켓 마운트**, 외부 Postgres는 **TCP + TLS**다.
+접속 문자열 교체만으로 끝나지 않는다. TypeORM 설정이 처음부터 양쪽을 받도록 짠다.
+
+**2. 데이터가 무료 티어 용량에 들어가는 크기로 유지된다** → §2.7
+
+**일정**: 크레딧 만료일을 캘린더에 등록. **만료 30일 전 재판단.**
+
+---
+
+### 2.7 `raw_payload` 보존 상한을 첫 커밋에 넣는다
+
+보존 상한이 없으면 §2.6의 출구가 막힌다.
+
+- 크레딧 3개월을 무제한 보존으로 돌리면 재판단 시점에 데이터가 무료 티어에 안 들어간다
+- `tomomachi`의 cloud-sql 모듈은 `PD_SSD` + `disk_autoresize = true`다.
+  **한 번 늘어난 디스크는 축소되지 않고** 그만큼 계속 과금된다
+
+**규칙**
+
+| 대상 | 보존 |
+| --- | --- |
+| `mention` 행 (제목·URL·날짜·메타) | **영구** — 감사 추적 |
+| `mention.raw_payload` | **90일 후 삭제** (잠정) |
+| 저장 조건 | **내용 해시 비교. 무변경이면 저장하지 않음** |
+
+30분 폴링은 대부분 무변경이므로 해시 비교만으로 대부분 줄어든다.
+90일은 운용 1개월 후 실측 증가율로 조정한다.
+
+---
+
+## 3. 로컬 개발 환경
+
+| 항목 | 방식 |
+| --- | --- |
+| Node | volta로 22.18.0 고정 |
+| DB | `docker compose up -d` (PostgreSQL) — `tomomachi` 동일 |
+| 마이그레이션 | `migration:generate` / `run` / `revert` / `show` |
+| 수집기 실행 | `nest-commander` 커맨드 직접 호출. 어댑터 단위 실행 |
+| 스케줄 | 로컬에 한해 `@nestjs/schedule` 허용. 프로덕션 반영 금지 |
+| 훅 | lefthook (`tomomachi-fe` 동일) |
+
+**로컬 실행 시에도 운영 규범을 지킨다.** 개발 중이라고 폴링 간격을 줄이지 않는다.
+대상 서버 입장에서 개발용 요청과 프로덕션 요청은 구별되지 않는다.
+가능하면 저장된 `raw_payload` 픽스처로 파서를 개발한다 ([[data-collection-design]] §10.2와 동일 자산).
+
+---
+
+## 4. 착수 전 검증 항목
+
+코드를 쓰기 전에 확인한다. 실패하면 선정이 흔들린다.
+
+| # | 항목 | 실패 시 |
+| --- | --- | --- |
+| 1 | **Cloud Scheduler가 분 범위 cron(`50-59 10 * * *`)을 받는지** | 스케줄 설계 재판단 ([[data-collection-design]] §6) |
+| 2 | **Scheduler → Cloud Run Job 호출 IAM 경로** (Admin API `:run` + 서비스 계정) | §2.2의 B안으로 변경 |
+| 3 | Cloud Run Job에서 `/cloudsql` 소켓 마운트로 Postgres 접속 | `tomomachi` 선례 있으므로 낮은 리스크 |
+| 4 | `db-f1-micro`가 30분 폴링 부하를 감당하는지 | 사양 상향 = 고정비 증가 |
+
+### 4.1 `disk_autoresize` 주의
+
+`tomomachi`의 cloud-sql 모듈은 `disk_autoresize = true`다.
+**축소되지 않는다.** §2.7의 보존 규칙을 v0 첫 커밋에 넣지 않으면 크레딧 기간 중 불어난 용량이 그대로 고정비가 된다.
+
+---
+
+## 5. 버리는 선택지 요약
+
+| 후보 | 버린 이유 |
+| --- | --- |
+| Cloudflare Workers + D1 | NestJS를 못 올린다. 스택 재사용 이득 상실 (§2.1) |
+| `@nestjs/schedule` (프로덕션) | scale-to-zero와 양립 불가 + 중복 발화가 운영 규범 위반 (§2.2) |
+| Scheduler → HTTP 엔드포인트 | 수집기 기동 표면을 공개 인터넷에 두게 됨 (§2.2) |
+| Firebase Auth | v0/v0.5에 로그인 없음 |
+| `zustand` | 서버 상태만 다룬다 |
+| Cloud Storage 이미지 캐싱 | 저작물. 링크아웃만 ([[plan-draft]] §1.4) |
+| `@nestjs/swagger` | v0에 HTTP API 없음 |
+| repo 분할 | 개인 규모에 오버헤드 (§2.5) |
+
+---
+
+## 관련 문서
+
+- [[plan-draft]] — 제품 기획 (왜)
+- [[data-collection-design]] — 수집·데이터 설계 (어떻게)
+- [[치이카와 굿즈 알리미 소스 조사]] — 소스 실지조사 결과
