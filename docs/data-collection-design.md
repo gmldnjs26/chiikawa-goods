@@ -69,10 +69,29 @@ drop      발표 단위 = 유저가 보는 단위 = 알림 단위
 
 ### 2.3 item — 정규화된 굿즈
 
-`drop_id` / `title` / `price` / `channel` / `status` /
+`drop_id` / `title` / `price` / `status` /
 `preorder_at` / `release_at` / `restock_at` / `official_url` / `image_url`
 
 `image_url`은 **원본 링크만** 저장한다. 파일을 가져오지 않는다.
+
+**분류 필드** — 화면 분류·필터의 근거 ([[plan-draft]] §6.1)
+
+| 필드 | 값 | 필수 |
+| --- | --- | --- |
+| `channel` | `online_official` `konbini` `arcade` `gacha` `store` `kuji` `apparel` | **필수** |
+| `brand` | `chiikawa_market` `nagano_market` `pocket` `mogumogu` `ichiban_kuji` … / `unknown` | 선택 |
+| `acquisition` | `fixed`(확정) / `random`(랜덤) | **필수** |
+| `region` | `online` `national` `tokyo` `osaka` … | 채널이 `store`면 필수 |
+| `series_total` | 랜덤일 때 총 종류 수 (`全8種`) | `random`이면 필수 |
+
+> [!important] 카드를 내는 최소 조건
+> **`channel` · 날짜 · `status`** 3개가 없으면 화면에 내지 않는다.
+> `brand`는 비어도 낸다 — `unknown`은 `その他`로 표시한다 ([[plan-draft]] §6.6).
+> 억지로 브랜드를 채우면 틀린 라벨이 화면에 남고, 그건 정보 왜곡이다.
+
+**`channel`은 소스에서 파생된다** (어느 소스에서 왔는지가 곧 채널이다).
+**`brand`는 파생되지 않는다** — 컬렉션·태그·제목에서 규칙 매칭하고, 실패하면 `unknown`이다.
+브랜드 규칙은 §9.5.
 
 ### 2.4 drop — 발표 단위
 
@@ -86,6 +105,9 @@ append-only. `item_id` / `status` / `observed_at` / `source_mention_id`
 > 나중에 추가하면 **그 전에 일어난 전이는 소급 불가**다. 재수집으로 채울 수 없다.
 > 관측 시점에 기록하지 않으면 영구히 없는 데이터다.
 > v0에는 알림이 없지만 `status_history`는 v0부터 쌓는다 — 알림 정책을 실측으로 정하기 위한 유일한 근거다.
+
+> 화면의 캘린더도 이 이력을 쓴다. **캘린더에 놓이는 것은 `item`이 아니라 전이·예정 사건**이므로
+> 같은 굿즈가 예약일과 발매일에 두 번 나타난다 ([[plan-draft]] §6.4).
 
 > [!warning] 같은 상태 재진입을 허용한다
 > `(item_id, status)`에 unique를 걸면 안 된다.
@@ -287,7 +309,21 @@ PR TIMES 키워드 JSON · `chiikawa.jp`(WP REST) · 세븐(RSS) · 로손(SSR) 
 
 자동 병합만 두면 **틀린 병합을 고칠 방법이 없다.** 최소 기능 3개: 병합 / 병합 해제 / `mention` 무시.
 
-### 9.4 dedupe 키
+### 9.4 브랜드 판정
+
+`brand`는 소스가 명시하지 않는다. 3단계로 판정하고, 실패를 허용한다.
+
+| 단계 | 방법 |
+| --- | --- |
+| 1 | 공식 스토어의 **컬렉션·태그** 매칭 |
+| 2 | 제목 문자열 규칙 매칭 (`もぐもぐ本舗` `ポケット` 등) |
+| 3 | 실패 → **`unknown`**. 수동 교정으로 옮긴다 (§9.3) |
+
+> 브랜드 enum 확정은 [[plan-draft]] §10 #5 미결정 사항이다.
+> **`ポケット` `もぐもぐ本舗`가 공식 스토어 안의 컬렉션인지 별도 EC인지에 따라 어댑터 수가 달라진다.**
+> v0 착수 전에 확인한다.
+
+### 9.5 dedupe 키
 
 소스 고유 ID(`releaseId` 등)를 쓴다.
 
