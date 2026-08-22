@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>(仮) ちいかわグッズまとめ — プロトタイプ</title>
+<style>
+  :root{
+    --bg:#fbf9f5; --surface:#ffffff; --line:#e8e2d8; --text:#2f2a24; --muted:#8a8178;
+    --accent:#e4703a; --onsale:#2f9e5f; --upcoming:#d99a1e; --ended:#a8a29a;
+    --chip:#f2ede4; --shadow:0 1px 2px rgba(47,42,36,.06),0 2px 8px rgba(47,42,36,.04);
+    --r:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#191714; --surface:#221f1b; --line:#332e28; --text:#f0ebe3; --muted:#9c948a;
+      --chip:#2c2823; --onsale:#4cba7b; --upcoming:#e0ad3f; --ended:#6b655e;
+      --shadow:0 1px 2px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+    font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:0 16px 64px}
+
+  /* header */
+  header{padding:20px 0 12px}
+  h1{font-size:19px;margin:0;letter-spacing:-.01em}
+  h1 .prov{font-size:11px;color:var(--muted);font-weight:400;border:1px solid var(--line);
+    border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+  .sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* tabs */
+  nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 0}
+  nav button{background:none;border:0;font:inherit;font-size:14px;color:var(--muted);
+    padding:9px 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  nav button[aria-selected="true"]{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+
+  /* filters */
+  .filters{padding:14px 0 4px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .frow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+  .flabel{font-size:11px;color:var(--muted);width:100%;margin-bottom:-2px}
+  .chip{background:var(--chip);border:1px solid transparent;border-radius:999px;
+    padding:4px 11px;font-size:13px;cursor:pointer;color:var(--text);font-family:inherit;
+    display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+  .chip[aria-pressed="true"]{background:var(--text);color:var(--bg);font-weight:600}
+  .chip.brand[aria-pressed="true"]{background:var(--accent);color:#fff}
+  .checks{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);padding:2px 0 10px}
+  .checks label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+  .checks input{accent-color:var(--accent);width:15px;height:15px}
+
+  /* sections */
+  section{margin-bottom:30px}
+  .shead{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+  .shead h2{font-size:16px;margin:0}
+  .count{font-size:12px;color:var(--muted)}
+  .snote{font-size:12px;color:var(--muted);margin:0 0 10px}
+
+  /* card */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:13px 14px;margin-bottom:9px;box-shadow:var(--shadow);position:relative}
+  .card.ended{opacity:.62}
+  .ctop{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+  .bchip{font-size:11px;background:var(--chip);border-radius:5px;padding:1px 7px;color:var(--muted);
+    white-space:nowrap;flex-shrink:0}
+  .bchip.unknown{border:1px dashed var(--line);background:none}
+  .title{font-size:15px;font-weight:600;margin:5px 0 6px;line-height:1.4}
+  .meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;color:var(--muted);align-items:center}
+  .meta .dot{opacity:.4}
+  .price{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap}
+  .badge{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .b-onsale{background:color-mix(in srgb,var(--onsale) 16%,transparent);color:var(--onsale)}
+  .b-upcoming{background:color-mix(in srgb,var(--upcoming) 18%,transparent);color:var(--upcoming)}
+  .b-ended{background:var(--chip);color:var(--ended)}
+  .b-restock{background:color-mix(in srgb,#4a8ede 18%,transparent);color:#4a8ede}
+  .cfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;
+    margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px}
+  .src{color:var(--muted)}
+  .src a{color:var(--muted)}
+  .go{color:var(--accent);text-decoration:none;font-weight:600;white-space:nowrap}
+  .go:hover{text-decoration:underline}
+  .est{border-bottom:1px dotted var(--muted);cursor:help}
+  .random{color:var(--accent)}
+
+  /* calendar */
+  .day{display:grid;grid-template-columns:58px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+  .day.today .dnum{color:var(--accent)}
+  .dnum{font-size:20px;font-weight:700;line-height:1.1}
+  .dwk{font-size:11px;color:var(--muted)}
+  .ev{margin-bottom:8px}
+  .ev:last-child{margin-bottom:0}
+  .evhead{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+  .evtitle{font-size:14px}
+  .month{font-size:13px;font-weight:700;color:var(--muted);padding:14px 0 2px}
+
+  .empty{color:var(--muted);font-size:13px;padding:18px 0;text-align:center;
+    border:1px dashed var(--line);border-radius:var(--r)}
+  footer{border-top:1px solid var(--line);margin-top:32px;padding-top:14px;
+    font-size:12px;color:var(--muted)}
+  footer p{margin:4px 0}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>(仮) ちいかわグッズまとめ<span class="prov">プロトタイプ</span></h1>
+  <div class="sub">発売・予約・再入荷をひとつのタイムラインに。サービス名・ドメインは未確定。</div>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true"  data-view="home">ホーム</button>
+    <button role="tab" aria-selected="false" data-view="cal">📅 カレンダー</button>
+    <button role="tab" aria-selected="false" data-view="past">🗄 過去 / 完売</button>
+  </nav>
+</header>
+
+<div class="filters">
+  <div class="frow" id="chFilter"><span class="flabel">入手チャネル</span></div>
+  <div class="frow" id="brFilter"><span class="flabel">ブランド</span></div>
+  <div class="checks">
+    <label><input type="checkbox" id="noRandom"> ランダム商品を除く</label>
+    <label><input type="checkbox" id="onlineOnly"> オンラインで買えるものだけ</label>
+  </div>
+</div>
+
+<div id="view-home">
+  <section>
+    <div class="shead"><h2>🟢 今すぐ買えるもの</h2><span class="count" id="cOnsale"></span></div>
+    <div id="listOnsale"></div>
+  </section>
+  <section>
+    <div class="shead"><h2>🔜 もうすぐ</h2><span class="count" id="cUpcoming"></span></div>
+    <p class="snote">開始時刻はサイトに記載がないため<strong>推定</strong>です。日付のみ確定情報。</p>
+    <div id="listUpcoming"></div>
+  </section>
+</div>
+
+<div id="view-cal" class="hide"><div id="calendar"></div></div>
+
+<div id="view-past" class="hide">
+  <section>
+    <div class="shead"><h2>🗄 過去 / 完売</h2><span class="count" id="cEnded"></span></div>
+    <p class="snote">再入荷があれば「今すぐ買えるもの」に戻ります。再入荷は事前予告ができません。</p>
+    <div id="listEnded"></div>
+  </section>
+</div>
+
+<footer>
+  <p>掲載情報は各公式サイトの公開情報をもとにした<strong>集計</strong>です。商品名・価格・日付・リンクのみを扱い、画像や説明文は転載しません。</p>
+  <p>各項目に出典を明記しています。誤り・削除のご依頼は GitHub Issues まで。</p>
+  <p>※ このページはレイアウト検証用のプロトタイプで、掲載データはすべて架空です。</p>
+</footer>
+</div>
+
+<script>
+const TODAY = new Date('2026-08-23T00:00:00+09:00');
+
+const CHANNELS = {
+  online_official:{l:'公式オンライン', i:'🛒'},
+  konbini:{l:'コンビニ', i:'🏪'},
+  arcade:{l:'プライズ', i:'🕹'},
+  gacha:{l:'ガシャポン', i:'🎰'},
+  kuji:{l:'くじ', i:'🎯'},
+  store:{l:'実店舗', i:'📍'},
+  apparel:{l:'アパレル', i:'👕'}
+};
+const BRANDS = {
+  chiikawa_market:'ちいかわマーケット',
+  nagano_market:'ナガノマーケット',
+  pocket:'ちいかわポケット',
+  mogumogu:'もぐもぐ本舗',
+  ichiban_kuji:'一番くじ',
+  unknown:'その他'
+};
+
+// 架空データ。channel / date / status は必須、brand は欠けてよい
+const ITEMS = [
+  {t:'ちいかわ ころんとぬいぐるみ ハチワレ', price:2970, ch:'online_official', br:'chiikawa_market',
+   st:'ON_SALE', acq:'fixed', region:'online', d:'2026-08-20', src:'ちいかわマーケット'},
+  {t:'秋のもぐもぐクッキー缶', price:1620, ch:'konbini', br:'mogumogu',
+   st:'ON_SALE', acq:'fixed', region:'national', d:'2026-08-18', until:'2026-08-26', src:'セブン‑イレブン'},
+  {t:'ちいかわポケット アクリルスタンド', price:880, ch:'online_official', br:'pocket',
+   st:'ON_SALE', acq:'random', total:8, region:'online', d:'2026-08-21', src:'ちいかわマーケット'},
+  {t:'ナガノマーケット 手ぬぐい 3種', price:1320, ch:'online_official', br:'nagano_market',
+   st:'ON_SALE', acq:'fixed', region:'online', d:'2026-08-22', src:'ナガノマーケット'},
+  {t:'ちいかわ でかぬいぐるみ（再入荷）', price:4950, ch:'online_official', br:'chiikawa_market',
+   st:'RESTOCK', acq:'fixed', region:'online', d:'2026-08-23', src:'ちいかわマーケット'},
+  {t:'ちいかわ ラバーマスコット', price:500, ch:'gacha', br:'unknown',
+   st:'ON_SALE', acq:'random', total:6, region:'national', d:'2026-08-15', src:'ガシャポン公式'},
+
+  {t:'秋の新作 予約 12点', price:null, ch:'online_official', br:'chiikawa_market',
+   st:'UPCOMING', acq:'fixed', region:'online', d:'2026-08-25', time:'18:00', ev:'予約開始', src:'ちいかわマーケット'},
+  {t:'ちいかわポケット 第4弾', price:990, ch:'online_official', br:'pocket',
+   st:'UPCOMING', acq:'random', total:10, region:'online', d:'2026-08-29', time:'11:00', ev:'発売', src:'ちいかわマーケット'},
+  {t:'一番くじ ちいかわ ～秋のおでかけ～', price:790, ch:'kuji', br:'ichiban_kuji',
+   st:'UPCOMING', acq:'random', total:72, region:'national', d:'2026-08-29', ev:'くじ発売', src:'プレスリリース'},
+  {t:'ちいかわ もちもちマスコット（プライズ）', price:null, ch:'arcade', br:'unknown',
+   st:'UPCOMING', acq:'random', total:4, region:'national', d:'2026-08-29', ev:'プライズ投入', src:'タイトー'},
+  {t:'ちいかわ ポップアップストア 渋谷', price:null, ch:'store', br:'unknown',
+   st:'UPCOMING', acq:'fixed', region:'tokyo', d:'2026-08-31', until:'2026-09-12', ev:'ポップアップ', src:'公式X'},
+  {t:'ちいかわ UT グラフィックTシャツ', price:1500, ch:'apparel', br:'unknown',
+   st:'UPCOMING', acq:'fixed', region:'national', d:'2026-09-04', ev:'発売', src:'UNIQLO'},
+  {t:'もぐもぐ本舗 秋の和菓子アソート', price:1080, ch:'konbini', br:'mogumogu',
+   st:'UPCOMING', acq:'fixed', region:'national', d:'2026-09-01', ev:'発売', src:'ローソン'},
+
+  {t:'夏の新作 うちわ 5種', price:770, ch:'online_official', br:'chiikawa_market',
+   st:'ENDED', acq:'fixed', region:'online', d:'2026-07-18', src:'ちいかわマーケット'},
+  {t:'一番くじ ちいかわ ～なつやすみ～', price:750, ch:'kuji', br:'ichiban_kuji',
+   st:'ENDED', acq:'random', total:68, region:'national', d:'2026-07-05', src:'プレスリリース'},
+  {t:'もぐもぐ本舗 冷やしぜんざい', price:430, ch:'konbini', br:'mogumogu',
+   st:'ENDED', acq:'fixed', region:'national', d:'2026-06-30', src:'ファミリーマート'}
+];
+
+const REGIONS = {online:'オンライン', national:'全国', tokyo:'東京', osaka:'大阪'};
+const state = {view:'home', ch:new Set(), br:new Set(), noRandom:false, onlineOnly:false};
+
+const days = (a,b)=>Math.round((new Date(a+'T00:00:00+09:00')-b)/864e5);
+const md = s=>{const d=new Date(s+'T00:00:00+09:00');return (d.getMonth()+1)+'/'+d.getDate();};
+const wk = s=>'日月火水木金土'[new Date(s+'T00:00:00+09:00').getDay()];
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function badge(it){
+  if(it.st==='ON_SALE') return '<span class="badge b-onsale">販売中</span>';
+  if(it.st==='RESTOCK') return '<span class="badge b-restock">📦 再入荷</span>';
+  if(it.st==='ENDED')   return '<span class="badge b-ended">完売 / 終了</span>';
+  const d=days(it.d,TODAY);
+  return '<span class="badge b-upcoming">'+(d<=0?'本日':'D-'+d)+'</span>';
+}
+
+function card(it){
+  const c=CHANNELS[it.ch], bk=it.br||'unknown';
+  const meta=[
+    c.i+' '+c.l,
+    REGIONS[it.region]||it.region,
+    it.acq==='random'
+      ? '<span class="random">ランダム'+(it.total?' 全'+it.total+'種':'')+'</span>'
+      : '確定'
+  ];
+  if(it.st==='UPCOMING'){
+    meta.push(md(it.d)+(it.time?' <span class="est" title="サイトに記載がないため実測ベースの推定です">'+it.time+'頃</span>':'')+(it.ev?' '+it.ev:''));
+  }
+  if(it.until) meta.push('～'+md(it.until));
+  return '<article class="card'+(it.st==='ENDED'?' ended':'')+'">'
+    + '<div class="ctop"><span class="bchip'+(bk==='unknown'?' unknown':'')+'">'+esc(BRANDS[bk])+'</span>'
+    + badge(it)+'</div>'
+    + '<div class="title">'+esc(it.t)+'</div>'
+    + '<div class="meta">'+meta.join('<span class="dot">・</span>')
+    + (it.price!=null?'<span style="margin-left:auto" class="price">¥'+it.price.toLocaleString()+'</span>':'')
+    + '</div>'
+    + '<div class="cfoot"><span class="src">出典: <a href="#">'+esc(it.src)+'</a></span>'
+    + '<a class="go" href="#">公式ページ →</a></div></article>';
+}
+
+function pass(it){
+  if(state.ch.size && !state.ch.has(it.ch)) return false;
+  if(state.br.size && !state.br.has(it.br||'unknown')) return false;
+  if(state.noRandom && it.acq==='random') return false;
+  if(state.onlineOnly && !(it.ch==='online_official'||it.region==='online')) return false;
+  return true;
+}
+
+function render(){
+  const f=ITEMS.filter(pass);
+  const onsale=f.filter(i=>i.st==='ON_SALE'||i.st==='RESTOCK');
+  const up=f.filter(i=>i.st==='UPCOMING').sort((a,b)=>a.d<b.d?-1:1);
+  const ended=f.filter(i=>i.st==='ENDED').sort((a,b)=>a.d<b.d?1:-1);
+
+  const put=(id,arr,msg)=>document.getElementById(id).innerHTML =
+    arr.length?arr.map(card).join(''):'<div class="empty">'+msg+'</div>';
+  put('listOnsale',onsale,'条件に合う商品がありません');
+  put('listUpcoming',up,'予定されている発表はありません');
+  put('listEnded',ended,'該当なし');
+  document.getElementById('cOnsale').textContent='('+onsale.length+')';
+  document.getElementById('cUpcoming').textContent='('+up.length+')';
+  document.getElementById('cEnded').textContent='('+ended.length+')';
+
+  // カレンダー: item ではなく「出来事」を並べる
+  const evs=[];
+  f.forEach(i=>{
+    if(i.st==='UPCOMING') evs.push({d:i.d,label:i.ev||'発売',it:i});
+    else if(i.st==='RESTOCK') evs.push({d:i.d,label:'再入荷',it:i});
+    else evs.push({d:i.d,label:i.st==='ENDED'?'発売（終了）':'発売',it:i});
+  });
+  evs.sort((a,b)=>a.d<b.d?-1:1);
+  const byDay={}; evs.forEach(e=>(byDay[e.d]=byDay[e.d]||[]).push(e));
+  let html='', month='';
+  Object.keys(byDay).sort().forEach(d=>{
+    const m=d.slice(0,7);
+    if(m!==month){month=m;html+='<div class="month">'+Number(m.slice(5))+'月</div>';}
+    const isToday = d==='2026-08-23';
+    html+='<div class="day'+(isToday?' today':'')+'"><div><div class="dnum">'
+      +Number(d.slice(8))+'</div><div class="dwk">('+wk(d)+')'+(isToday?' 今日':'')+'</div></div><div>';
+    byDay[d].forEach(e=>{
+      const c=CHANNELS[e.it.ch], bk=e.it.br||'unknown';
+      html+='<div class="ev"><div class="evhead">'+c.i+' '+esc(e.label)
+        +(e.it.time?' <span class="est" title="推定">'+e.it.time+'頃</span>':'')
+        +'</div><div class="evtitle"><span class="bchip'+(bk==='unknown'?' unknown':'')+'">'
+        +esc(BRANDS[bk])+'</span> '+esc(e.it.t)
+        +(e.it.acq==='random'&&e.it.total?' <span class="random">全'+e.it.total+'種</span>':'')
+        +'</div></div>';
+    });
+    html+='</div></div>';
+  });
+  document.getElementById('calendar').innerHTML = html||'<div class="empty">該当なし</div>';
+}
+
+// filters
+function chips(box,map,key,cls){
+  Object.entries(map).forEach(([k,v])=>{
+    const b=document.createElement('button');
+    b.className='chip'+(cls?' '+cls:''); b.setAttribute('aria-pressed','false');
+    b.innerHTML = typeof v==='string' ? esc(v) : v.i+' '+esc(v.l);
+    b.onclick=()=>{
+      const on=b.getAttribute('aria-pressed')==='true';
+      b.setAttribute('aria-pressed',String(!on));
+      on?state[key].delete(k):state[key].add(k);
+      render();
+    };
+    box.appendChild(b);
+  });
+}
+chips(document.getElementById('chFilter'),CHANNELS,'ch');
+chips(document.getElementById('brFilter'),BRANDS,'br','brand');
+noRandom.onchange=e=>{state.noRandom=e.target.checked;render();};
+onlineOnly.onchange=e=>{state.onlineOnly=e.target.checked;render();};
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
+  ['home','cal','past'].forEach(v=>
+    document.getElementById('view-'+v).classList.toggle('hide', v!==b.dataset.view));
+});
+render();
+</script>
+</body>
+</html>
