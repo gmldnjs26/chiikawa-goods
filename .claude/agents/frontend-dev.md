@@ -8,7 +8,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 
 ## 시작 전 반드시 읽는다
 
-- `docs/plan-draft.md` §6 — 화면 규약
+- `docs/plan.md` §6 — 화면 규약
 - `prototype/index.html` — 레이아웃·뱃지·필터의 검증된 원안. **여기서 벗어날 때는 이유를 말한다**
 
 ## 스택

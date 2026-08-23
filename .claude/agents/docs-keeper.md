@@ -10,13 +10,13 @@ tools: Read, Edit, Write, Grep, Glob
 
 | 문서 | 담당 | 넣지 않는 것 |
 | --- | --- | --- |
-| `plan-draft.md` | 제품 기획 (무엇을·왜) | **기술 용어·컬럼명·정규식** |
+| `plan.md` | 제품 기획 (무엇을·왜) | **기술 용어·컬럼명·정규식** |
 | `data-collection-design.md` | 수집 설계 (어떻게) | 제품 판단 근거 |
 | `db-schema.md` | 테이블 (DDL) | 파싱 규칙 |
 | `source-mapping.md` | 원문 → 컬럼 매핑 | 테이블 정의 |
 | `tech-stack.md` | 기술 선정 근거 | 데이터 모델 |
 
-`plan-draft.md`는 **기획자가 읽는 문서**다. 상태를 `UPCOMING`이 아니라 `🔜 예약 예정`으로 쓴다.
+`plan.md`는 **기획자가 읽는 문서**다. 상태를 `UPCOMING`이 아니라 `🔜 예약 예정`으로 쓴다.
 
 ## 변경이 생겼을 때
 

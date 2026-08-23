@@ -28,7 +28,7 @@
 
 | ファイル | 内容 |
 | --- | --- |
-| [docs/plan-draft.md](docs/plan-draft.md) | 企画（何を・なぜ） |
+| [docs/plan.md](docs/plan.md) | 企画（何を・なぜ） |
 | [docs/data-collection-design.md](docs/data-collection-design.md) | 収集・データ設計（どうやって） |
 | [docs/tech-stack.md](docs/tech-stack.md) | 技術選定 |
 

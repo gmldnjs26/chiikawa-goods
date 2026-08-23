@@ -185,7 +185,7 @@ CREATE TABLE brand (
 판정 규칙(`match_rules`)을 코드에 하드코딩하면 규칙 수정에 배포가 필요하다.
 채널·상태는 반대로 거의 안 변하므로 `CHECK`로 충분하다.
 
-`brand_id`가 `NULL`이면 미판정이고, 화면에는 `その他`로 **표시한다** ([[plan-draft]] §6.6).
+`brand_id`가 `NULL`이면 미판정이고, 화면에는 `その他`로 **표시한다** ([[plan]] §6.6).
 
 ### 5.2 item
 
@@ -256,7 +256,7 @@ CREATE INDEX ON item USING gin (labels);
 > `川越店限定` 상품은 **온라인에서 살 수 있다.** 지역 제약이 아니므로 `region`이 아니라 `labels`다.
 > `region`은 **"내가 그 장소에 가야 하는가"** 일 때만 쓴다 ([[source-mapping]] §6.1).
 
-`CHECK` 2개가 [[plan-draft]] §6.3의 카드 규약을 DB에서 강제한다 —
+`CHECK` 2개가 [[plan]] §6.3의 카드 규약을 DB에서 강제한다 —
 랜덤인데 종류 수가 없거나, 실점포인데 지역이 온라인인 카드는 애초에 저장되지 않는다.
 
 ---
@@ -313,7 +313,7 @@ CREATE INDEX ON item_mention (mention_id);
 ```
 
 **하나의 굿즈가 여러 소스에서 온다.** 같은 一番くじ가 PR TIMES · 팬 블로그 · 공식에 각각 뜬다
-([[data-collection-design]] §9.1). 이 테이블이 [[plan-draft]] §6.8 **출처 표기의 데이터 근거**다.
+([[data-collection-design]] §9.1). 이 테이블이 [[plan]] §6.8 **출처 표기의 데이터 근거**다.
 
 `role='primary'`가 공식 링크의 출처다.
 
