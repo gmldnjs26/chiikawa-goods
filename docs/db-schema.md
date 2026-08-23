@@ -16,7 +16,7 @@
 ```
 source ──< collection_run
    │
-   └──< mention ──< item_mention >── item ──> drop
+   └──< mention ──< item_mention >── item ──> drop_group
                                       │
                                       ├──< status_history      과거
                                       ├──< scheduled_event     미래
@@ -41,6 +41,7 @@ source ──< collection_run
 | PK | `id bigint generated always as identity` |
 | 시각 | `timestamptz`. 애플리케이션은 UTC로 다루고 표시만 JST |
 | 캘린더 날짜 | `date` (JST 기준 달력일). 발매일·예약일은 **시각이 아니라 날짜**다 |
+| 예약어 | **`drop`은 SQL 예약어다.** 테이블명은 `drop_group`, 컬럼은 `drop_id`. 문서 본문의 "drop"은 도메인 용어로만 쓴다 |
 | 열거값 | **`text` + `CHECK`.** Postgres `enum` 타입은 값 추가에 `ALTER TYPE`이 필요해 migration이 무거워진다 |
 | 금액 | `integer` (JPY, 소수 없음). 세금 포함 여부는 `price_tax_included` |
 | 생성/갱신 | `created_at` / `updated_at timestamptz not null default now()` |
@@ -120,8 +121,8 @@ CREATE TABLE mention (
   UNIQUE (source_id, external_id, payload_hash)
 );
 CREATE INDEX ON mention (source_id, observed_at DESC);
-CREATE INDEX ON mention (payload_purged_at)
-  WHERE raw_payload IS NOT NULL;          -- 정리 배치용
+CREATE INDEX ON mention (observed_at)
+  WHERE raw_payload IS NOT NULL;          -- 정리 배치용: 90일 경과 + 본문 잔존
 ```
 
 > [!important] UNIQUE에 `payload_hash`가 들어간다
@@ -160,7 +161,7 @@ CREATE TABLE brand (
 ```sql
 CREATE TABLE item (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  drop_id       bigint REFERENCES drop(id),
+  drop_id       bigint REFERENCES drop_group(id),
   brand_id      bigint REFERENCES brand(id),     -- NULL = 미판정
   title         text NOT NULL,
   title_norm    text NOT NULL,                   -- 정규화 제목 (§9.2 dedupe용)
@@ -211,10 +212,13 @@ CREATE INDEX ON item (title_norm);
 
 ---
 
-## 6. drop — 발표 단위
+## 6. drop_group — 발표 단위
+
+> 도메인 용어는 `drop`이지만 **`drop`은 SQL 예약어**다. 테이블명은 `drop_group`으로 둔다.
+> `FROM drop` / `REFERENCES drop(id)`는 큰따옴표 없이는 파싱되지 않고, TypeORM 엔티티명도 충돌한다.
 
 ```sql
-CREATE TABLE drop (
+CREATE TABLE drop_group (
   id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   title        text NOT NULL,
   kind         text NOT NULL,        -- CHECK: preorder|release|restock|campaign
@@ -223,11 +227,11 @@ CREATE TABLE drop (
   is_manual    boolean NOT NULL DEFAULT false,
   created_at   timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX ON drop (primary_date DESC);
+CREATE INDEX ON drop_group (primary_date DESC);
 ```
 
 `item.drop_id`는 **NULL 허용**이다. 묶음 기준이 아직 미결정이고([[plan-draft]] §10 #3),
-v0에서는 공식 스토어 컬렉션 = `drop` 1:1로 두고 `grouping_key`에 컬렉션 handle을 넣는다.
+v0에서는 공식 스토어 컬렉션 = `drop_group` 1:1로 두고 `grouping_key`에 컬렉션 handle을 넣는다.
 묶이지 않은 `item`도 화면에는 단독으로 나온다.
 
 ---
@@ -320,13 +324,24 @@ CREATE TABLE notification (
   trigger_kind text NOT NULL,       -- CHECK: status_transition|schedule_new|schedule_d1
   status_history_id  bigint REFERENCES status_history(id),
   scheduled_event_id bigint REFERENCES scheduled_event(id),
-  drop_id     bigint REFERENCES drop(id),
+  drop_id     bigint REFERENCES drop_group(id),
   channel     text NOT NULL,        -- CHECK: discord|web_push
-  sent_at     timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (trigger_kind, status_history_id, channel),
-  UNIQUE (trigger_kind, scheduled_event_id, channel)
+  sent_at     timestamptz NOT NULL DEFAULT now()
 );
+
+-- 부분 유니크 인덱스로 건다. 테이블 제약으로 걸면 안 된다 (아래 경고)
+CREATE UNIQUE INDEX ON notification (trigger_kind, status_history_id, channel)
+  WHERE status_history_id IS NOT NULL;
+CREATE UNIQUE INDEX ON notification (trigger_kind, scheduled_event_id, channel)
+  WHERE scheduled_event_id IS NOT NULL;
 ```
+
+> [!warning] `UNIQUE (…, status_history_id, …)`로 걸면 아무것도 막지 못한다
+> Postgres의 UNIQUE는 기본적으로 **NULL을 서로 다른 값으로 취급**한다.
+> 예정 트리거 행은 `status_history_id`가 NULL이므로 그 제약을 무한히 통과한다 — 반대도 마찬가지다.
+> **이 테이블이 존재하는 유일한 이유가 정확히 그 지점에서 새어나간다.**
+> 부분 유니크 인덱스로 NULL 행을 대상에서 빼거나, PG15+의 `NULLS NOT DISTINCT`를 쓴다.
+> 여기서는 의도가 드러나는 부분 인덱스를 택한다.
 
 > [!important] 중복 방지 키가 `(drop_id, trigger)`가 아니다
 > 재입고는 같은 `drop`에서 **여러 번** 일어난다. `(drop_id, trigger)`에 unique를 걸면
@@ -369,12 +384,17 @@ Deduper는 병합 전에 이 테이블을 먼저 본다.
 
 ```sql
 CREATE VIEW item_current_schedule AS
-SELECT DISTINCT ON (item_id, kind)
-       item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
+SELECT item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
   FROM scheduled_event
- WHERE superseded_at IS NULL
- ORDER BY item_id, kind, observed_at DESC;
+ WHERE superseded_at IS NULL;
 ```
+
+> [!important] 유효 행 판정의 권한은 `superseded_at` 하나다
+> `DISTINCT ON (item_id, kind) ORDER BY observed_at DESC`를 함께 쓰면
+> supersede 로직이 한 건 놓쳤을 때 **조용히 한 행을 골라버린다.**
+> 틀린 답이 그럴듯한 모습으로 나오는 것이 가장 나쁘다.
+> 여기서는 `superseded_at`만 권한을 갖고, 중복이 생기면 **화면에 두 줄로 드러나게** 둔다.
+> `(item_id, kind)` 유효 행이 2건 이상이면 경보를 낸다 — supersede 버그의 탐지 지점이다.
 
 | 화면 섹션 | 조건 |
 | --- | --- |
@@ -394,12 +414,12 @@ SELECT DISTINCT ON (item_id, kind)
 | 순서 | 내용 |
 | --- | --- |
 | 1 | `source` · `brand` · `collection_run` · `mention` |
-| 2 | `drop` · `item` · `item_mention` |
+| 2 | `drop_group` · `item` · `item_mention` |
 | 3 | **`status_history` · `scheduled_event`** ← v0 첫 릴리스에 필수 |
 | 4 | `merge_override` · `item_current_schedule` 뷰 |
 | 5 | `notification` (v0.5) |
 
-1~4가 v0다. FK 방향 때문에 `drop`이 `item`보다 앞선다.
+1~4가 v0다. FK 방향 때문에 `drop_group`이 `item`보다 앞선다.
 
 ---
 
