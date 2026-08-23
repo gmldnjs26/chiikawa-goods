@@ -169,18 +169,19 @@ CREATE TABLE item (
   official_url  text NOT NULL,
   image_url     text,                            -- 링크만. 파일은 갖지 않는다
   price         integer,
-  price_tax_included boolean,
+  price_tax_included boolean,          -- 공식 스토어는 true 고정 (표시가 税込)
+  category      text,                  -- Shopify product_type: 'Tシャツ・パーカー'
+  vendor        text,                  -- 제조사: 'トーキング'. 브랜드와 다르다
 
   -- 분류 (화면 필터의 근거)
   channel       text NOT NULL,   -- CHECK: online_official|konbini|arcade|gacha|kuji|store|apparel
   acquisition   text NOT NULL,   -- CHECK: fixed|random
   series_total  integer,         -- random일 때 총 종류 수
-  region        text NOT NULL DEFAULT 'online',  -- online|national|tokyo|osaka|...
+  region        text NOT NULL DEFAULT 'online',  -- online|national|tokyo|osaka|nagoya|...
 
   -- 상태 (현재값. 이력은 status_history)
   status        text NOT NULL,   -- CHECK: UPCOMING|ON_SALE|ENDED
   status_at     timestamptz NOT NULL DEFAULT now(),
-  sale_final    boolean NOT NULL DEFAULT false,  -- 판매 종료 확정(재판매 없음)
 
   -- 날짜 (JST 달력일)
   preorder_on   date,
@@ -207,6 +208,14 @@ CREATE INDEX ON item (title_norm);
 (`source.channel`), 화면 필터가 전부 이 컬럼을 때리고 병합 시 소스가 여럿이 된다.
 파생을 매번 조인으로 풀면 대표 소스를 정하는 문제가 생긴다.
 
+> [!note] `sale_final`을 뺐다 (2026-08-23 실지 확인)
+> 공식 스토어의 품절 표기는 **「売り切れ」 하나뿐**이고 `完売`/`販売終了`를 구분하지 않는다.
+> **소스에서 판정할 수 없는 값은 컬럼으로 두지 않는다.** 화면도 `完売` 하나로 낸다.
+
+> [!note] `region`은 도시 단위까지 (`online` `national` `tokyo` `osaka` `nagoya` …)
+> 팝업·실점포가 대부분 대도시에 열리므로 도시 단위가 실용적이다.
+> v0에서 실제로 쓰이는 값은 `online`뿐이다.
+
 `CHECK` 2개가 [[plan-draft]] §6.3의 카드 규약을 DB에서 강제한다 —
 랜덤인데 종류 수가 없거나, 실점포인데 지역이 온라인인 카드는 애초에 저장되지 않는다.
 
@@ -230,9 +239,22 @@ CREATE TABLE drop_group (
 CREATE INDEX ON drop_group (primary_date DESC);
 ```
 
-`item.drop_id`는 **NULL 허용**이다. 묶음 기준이 아직 미결정이고([[plan-draft]] §10 #3),
-v0에서는 공식 스토어 컬렉션 = `drop_group` 1:1로 두고 `grouping_key`에 컬렉션 handle을 넣는다.
-묶이지 않은 `item`도 화면에는 단독으로 나온다.
+**묶음 규칙** (확정)
+
+| 우선 | 기준 | `grouping_key` |
+| --- | --- | --- |
+| 1 | 공식 스토어 **컬렉션 소속** | 컬렉션 handle (`20260821`) |
+| 2 | **같은 날짜 + 같은 브랜드 + 같은 `kind`** | `date:brand:kind` |
+| 3 | 어느 쪽도 아니면 묶지 않는다 | `NULL` |
+
+> [!warning] 브랜드 미판정(`brand_id IS NULL`)은 묶지 않는다
+> 같은 날 `その他`끼리 전부 묶으면 **관계없는 굿즈가 한 발표로 뭉친다.**
+> 미판정은 단독으로 낸다. 수동 교정으로 나중에 묶는다.
+
+`kind`까지 키에 넣는 이유 — 같은 날 같은 브랜드에서 **예약 개시와 재입고가 동시에** 일어난다.
+섞으면 알림 문구를 만들 수 없다.
+
+`item.drop_id`는 **NULL 허용**이다. 묶이지 않은 `item`도 화면에는 단독으로 나온다.
 
 ---
 
@@ -427,8 +449,10 @@ SELECT item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
 
 | # | 항목 | 영향 |
 | --- | --- | --- |
-| 1 | `region` 값 체계 — 도도부현인지 도시인지 | 실점포 도입 시점에 결정. v0은 `online`/`national`만 |
-| 2 | `drop` 자동 묶음 기준 ([[plan-draft]] §10 #3) | v0은 컬렉션 1:1 |
-| 3 | `sale_final`을 소스에서 판정 가능한가 — 공식이 `完売`와 `販売終了`를 구분 표기하는지 | 구분이 없으면 컬럼을 버리고 `完売` 하나로 |
-| 4 | `brand.match_rules` 스키마 | 브랜드 목록 확정 후 |
-| 5 | `price_tax_included` — 소스가 세금 포함 여부를 명시하는지 | 불명이면 표시에 "税込/税抜 불명"이 필요 |
+| 1 | `ポケット` `もぐもぐ本舗` 전용 컬렉션 / 별도 EC 여부 | **v0 어댑터 수가 달라진다.** 컬렉션 목록 전량 재확인 필요 |
+| 2 | `brand` 초기 목록과 `match_rules` 값 | 태그 기반으로 판정 가능함은 확인됨. 목록 자체는 미확정 |
+| 3 | 편의점·프라이즈 소스의 세금 표기 | 공식 스토어는 `税込` 확정. 다른 소스는 미확인 |
+| 4 | `category`(product_type) 값 정규화 여부 | 원문 그대로 둘지, 소수 카테고리로 매핑할지 |
+
+**해소됨** — `region`(도시 단위) · `drop_group` 묶음 기준(§6) · `sale_final`(제거) ·
+공식 스토어 `price_tax_included`(true 고정).

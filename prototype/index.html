@@ -226,7 +226,7 @@ const ITEMS = [
    plan:{kind:'restock', undecided:true}, src:'ローソン'},
 
   {t:'夏の新作 うちわ 5種', price:770, ch:'online_official', br:'chiikawa_market',
-   st:'ENDED', acq:'fixed', region:'online', d:'2026-07-18', final:true, src:'ちいかわマーケット'},
+   st:'ENDED', acq:'fixed', region:'online', d:'2026-07-18',  src:'ちいかわマーケット'},
   {t:'一番くじ ちいかわ ～なつやすみ～', price:750, ch:'kuji', br:'ichiban_kuji',
    st:'ENDED', acq:'random', total:68, region:'national', d:'2026-07-05', src:'プレスリリース'},
   {t:'もぐもぐ本舗 冷やしぜんざい', price:430, ch:'konbini', br:'mogumogu',
@@ -260,7 +260,7 @@ function badge(it){
     // 「9月下旬」のように幅のある表記は、そのまま出す。日付に丸めない
     return '<span class="badge b-planned">🔵 再入荷 '+esc(p.text)+'</span>';
   }
-  return '<span class="badge b-ended">'+(it.final?'販売終了':'完売')+'</span>';
+  return '<span class="badge b-ended">売り切れ</span>';
 }
 
 function card(it){
