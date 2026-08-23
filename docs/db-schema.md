@@ -7,6 +7,7 @@
 | DB | PostgreSQL 16 / TypeORM 0.3 (migration-driven, `synchronize: false`) |
 | 명명 | `typeorm-naming-strategies` snake_case. 테이블명 단수 |
 | 상위 문서 | [[data-collection-design]] (데이터 층 정의) / [[tech-stack]] (§2.4) |
+| 관련 문서 | [[source-mapping]] (소스 원문 → 테이블 필드 매핑) |
 | 범위 | 스키마와 그 근거. DDL은 설계 표현용이며 실제 반영은 migration으로 한다 |
 
 ---
@@ -182,8 +183,11 @@ CREATE TABLE item (
   canonical_url text UNIQUE,                     -- 소스 간 동일 판정 1순위
   official_url  text NOT NULL,
   image_url     text,                            -- 링크만. 파일은 갖지 않는다
-  price         integer,
+  price         integer,                -- variant 간 차이가 있으면 최저가
+  price_varies  boolean NOT NULL DEFAULT false,
   price_tax_included boolean,          -- 공식 스토어는 true 고정 (표시가 税込)
+  variant_available integer,           -- 재고 있는 variant 수. '一部品切れ' 표시용
+  variant_total     integer,
   category      text,                  -- Shopify product_type: 'Tシャツ・パーカー'
   vendor        text,                  -- 제조사: 'トーキング'. 브랜드와 다르다
 
@@ -302,6 +306,7 @@ CREATE TABLE status_history (
   status      text NOT NULL,        -- CHECK: UPCOMING|ON_SALE|ENDED
   observed_at timestamptz NOT NULL DEFAULT now(),
   mention_id  bigint REFERENCES mention(id),   -- 판정 근거
+  is_backfilled boolean NOT NULL DEFAULT false, -- 태그에서 소급 생성한 행
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX ON status_history (item_id, observed_at DESC);
@@ -312,6 +317,11 @@ CREATE INDEX ON status_history (item_id, observed_at DESC);
 > `ENDED → ON_SALE → ENDED → ON_SALE`이 정상 이력이다.
 
 **상태가 바뀔 때만** 행을 추가한다(매 폴링마다가 아니라). `item.status`는 최신 행의 사본이다.
+
+> [!warning] `is_backfilled` 행을 실측 통계에 넣지 않는다
+> `RE20260415` 같은 태그에서 되살린 행은 **날짜만 알고 시각은 모른다**(00:00 JST로 넣는다).
+> 개시 시각 통계에 섞으면 "재입고는 0시에 일어난다"는 틀린 결론이 나온다.
+> 백필 규칙은 [[source-mapping]] §3.4.
 
 > [!important] v0 첫 커밋에 들어간다
 > 나중에 추가하면 그 전 전이는 **소급 불가**다. v0에 알림이 없어도 이력은 쌓는다 —

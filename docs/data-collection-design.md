@@ -6,7 +6,7 @@
 | 버전 | v0.1 |
 | 독자 | 개발자 |
 | 상위 문서 | [[plan-draft]] (제품 기획) |
-| 관련 문서 | [[tech-stack]] (기술 선정·ADR) |
+| 관련 문서 | [[tech-stack]] (기술 선정) / [[db-schema]] (테이블) / [[source-mapping]] (필드 매핑) |
 | 범위 | 데이터 모델 · 수집 방식 · 정규화 규칙. **구현 코드 미포함** |
 
 > 제품이 왜 이렇게 동작해야 하는가는 [[plan-draft]]에 있다. 본 문서는 **어떻게**만 다룬다.
@@ -212,6 +212,8 @@ append-only. `item_id` / `status` / `observed_at` / `source_mention_id`
 | 부하 | **동시 요청 1**, `crawl_delay` 준수 |
 
 NestJS provider 1개 = 어댑터 1개. 실행 진입점은 `nest-commander` 커맨드 ([[tech-stack]] §2.3).
+
+**소스 원문의 어느 필드가 우리 어느 컬럼이 되는지는 [[source-mapping]]에 있다.**
 
 ### 4.1 요청 규범
 
