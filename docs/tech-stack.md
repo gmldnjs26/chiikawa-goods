@@ -249,12 +249,24 @@ Cloud SQL은 `/cloudsql` **Unix 소켓 마운트**, 외부 Postgres는 **TCP + T
 
 | # | 항목 | 실패 시 |
 | --- | --- | --- |
-| 1 | **Cloud Scheduler가 분 범위 cron(`50-59 10 * * *`)을 받는지** | 스케줄 설계 재판단 ([[data-collection-design]] §6) |
-| 2 | **Scheduler → Cloud Run Job 호출 IAM 경로** (Admin API `:run` + 서비스 계정) | §2.2의 B안으로 변경 |
+| 1 | **분 범위 cron 수용** — `50-59 10 * * *` + `time_zone: Asia/Tokyo` | 스케줄 설계 재판단 ([[data-collection-design]] §6) |
+| 2 | **`:run` 호출 최소 권한** — `roles/run.invoker`로 되는지, `roles/run.developer`가 필요한지 | 후자면 권한이 과하다. 커스텀 역할 검토 |
+| 2b | Scheduler가 `oauth_token`으로 Admin API에 붙는지 (OIDC 아님) | §2.2의 B안으로 변경 |
+| 2c | Scheduler job 개수와 무료 한도 (현재 설계 4개) | 초과 시 job당 소액 과금 |
 | 3 | Cloud Run Job에서 `/cloudsql` 소켓 마운트로 Postgres 접속 | `tomomachi` 선례 있으므로 낮은 리스크 |
 | 4 | `db-f1-micro`가 30분 폴링 부하를 감당하는지 | 사양 상향 = 고정비 증가 |
 
-### 4.1 `disk_autoresize` 주의
+### 4.1 중복 실행은 스케줄러를 바꿔도 남는다
+
+`@nestjs/schedule`을 버린 이유가 중복 발화였지만(§2.2), **Cloud Run Job도 execution이 겹친다.**
+1분 간격에서 수집이 70초 걸리면 2개가 동시에 돈다.
+
+→ **Postgres advisory lock으로 소스 단위 직렬화**한다.
+추가 인프라는 없다 (DB가 이미 있다). 상세: [[data-collection-design]] §6.2.
+
+**즉 §2.2의 결정은 "중복이 안 난다"가 아니라 "상시 과금 없이 중복을 막을 수 있다"였다.**
+
+### 4.2 `disk_autoresize` 주의
 
 `tomomachi`의 cloud-sql 모듈은 `disk_autoresize = true`다.
 **축소되지 않는다.** §2.7의 보존 규칙을 v0 첫 커밋에 넣지 않으면 크레딧 기간 중 불어난 용량이 그대로 고정비가 된다.

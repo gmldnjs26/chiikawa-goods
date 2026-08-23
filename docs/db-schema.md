@@ -100,7 +100,7 @@ CREATE TABLE collection_run (
   source_id     bigint NOT NULL REFERENCES source(id),
   started_at    timestamptz NOT NULL DEFAULT now(),
   finished_at   timestamptz,
-  status        text NOT NULL,        -- CHECK: running|success|failed
+  status        text NOT NULL,        -- CHECK: running|success|failed|skipped_locked|skipped_idle
   mention_count integer NOT NULL DEFAULT 0,
   new_count     integer NOT NULL DEFAULT 0,
   excluded_count integer NOT NULL DEFAULT 0,   -- 관련성 필터로 제외한 건수
@@ -114,6 +114,13 @@ CREATE INDEX ON collection_run (source_id, started_at DESC);
 > [!important] `source.last_success_at` 컬럼을 두지 않는다
 > 실행 이력에서 파생되는 값이다. 컬럼으로 중복해서 들고 있으면 반드시 어긋난다.
 > 헬스 판정은 `collection_run` 조회로 한다.
+
+`status`에 스킵 2종이 있다 ([[data-collection-design]] §6.1–6.2).
+
+| 값 | 의미 |
+| --- | --- |
+| `skipped_idle` | 창구 폴링인데 오늘 예정이 없어 외부 요청 없이 종료 |
+| `skipped_locked` | 앞선 실행이 아직 돌고 있어 종료. **자주 나오면 주기가 너무 짧다** |
 
 `failure_kind`에 **`validation`이 따로 있다.** 본문 검증 실패(소프트 404)는 성공이 아니라 실패다
 ([[data-collection-design]] §7). `http_status`가 200이어도 여기 실패로 남는다.

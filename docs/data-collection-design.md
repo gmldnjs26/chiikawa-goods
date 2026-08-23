@@ -377,9 +377,54 @@ PR TIMES 키워드 JSON · `chiikawa.jp`(WP REST) · 세븐(RSS) · 로손(SSR) 
 - 스케줄 정의는 Terraform에 있다. 코드에 두지 않는다 ([[tech-stack]] §2.2)
 - 상시 1분 폴링은 하지 않는다. 제약은 비용이 아니라 **상대 서버 부하**다
 
-> [!important] 착수 전 검증
-> Cloud Scheduler가 `50-59 10 * * *` 형태의 분 범위를 받는지 확인.
-> 호스팅 선정 근거가 여기 걸려 있다 ([[tech-stack]] §4).
+### 6.1 창구 폴링은 매일 발화한다 — 앱에서 끊는다
+
+> [!warning] cron은 예약이 있는 날을 모른다
+> `50-59 10 * * *`는 **매일** 발화한다. 예약 발표는 주 1~2회다.
+> 그대로 두면 월 600회 요청 중 대부분이 헛방이고, 그건 **상대 서버 부하**다 (§4.1 규범 위반).
+
+**Job이 시작하자마자 스스로 판단하고 끊는다.**
+
+```
+Job 시작
+ └ 오늘 날짜의 scheduled_event(preorder|release)가 있나?
+      없으면 → 외부 요청 0건으로 즉시 종료
+      있으면 → 해당 소스만 폴링
+```
+
+cron job은 매일 돌지만 **외부 요청은 나가지 않는다.** Job 실행 비용은 거의 0이다.
+
+대안으로 "예약 감지 시 Scheduler job을 동적 생성"도 가능하지만,
+Terraform 밖에서 리소스를 만들게 되어 상태가 갈린다. 하지 않는다.
+
+### 6.2 실행 중복 방지 — 소스 단위 락
+
+> [!warning] Cloud Run Job은 실행이 겹칠 수 있다
+> 1분 간격인데 수집이 70초 걸리면 execution 2개가 동시에 돈다.
+> → **같은 소스에 요청이 2배** 나간다.
+> 이것은 `@nestjs/schedule`을 버린 이유와 **동일한 문제**다 ([[tech-stack]] §2.2).
+> 스케줄러를 바꿨을 뿐 중복 실행 자체는 사라지지 않는다.
+
+**소스 단위 advisory lock으로 막는다.**
+
+| 항목 | 방식 |
+| --- | --- |
+| 락 | Postgres `pg_advisory_lock(source_id)` |
+| 획득 실패 | 그 실행은 **즉시 종료**. 재시도하지 않는다 |
+| 기록 | `collection_run`에 `status='skipped_locked'`로 남긴다 |
+| 추가 인프라 | 없음. DB가 이미 있다 |
+
+락 없이 잡을 수 없다 — Job execution은 서로를 모른다.
+`skipped_locked`가 자주 나오면 폴링 주기가 수집 시간보다 짧다는 신호다.
+
+> [!important] 착수 전 검증 항목
+> 1. Cloud Scheduler가 분 범위 cron(`50-59 10 * * *`)을 받는지
+> 2. `time_zone: Asia/Tokyo`가 실제 JST로 발화하는지
+> 3. Scheduler → Cloud Run Job `:run` 호출에 필요한 **최소 권한**
+>    (`roles/run.invoker`로 충분한지, `roles/run.developer`가 필요한지)
+> 4. Scheduler job 개수와 무료 한도 (현재 설계는 4개)
+>
+> 상세: [[tech-stack]] §4
 
 ---
 
