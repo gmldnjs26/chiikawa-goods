@@ -1,0 +1,69 @@
+@import 'tailwindcss';
+
+/*
+ * 시맨틱 토큰만 쓴다. 컴포넌트에서 raw hex를 쓰지 않는다.
+ * (.claude/agents/frontend-dev.md — Apple HIG 기준)
+ */
+:root {
+  --background: #ffffff;
+  --surface: #f2f2f7; /* iOS systemGroupedBackground */
+  --separator: #c6c6c8;
+
+  --label: #000000;
+  --label-secondary: #3c3c4399; /* 60% */
+  --label-tertiary: #3c3c434d; /* 30% */
+
+  --accent: #0a84ff;
+
+  /* 상태 3개. 늘리지 않는다 (docs/plan.md §3.2) */
+  --state-on-sale: #34c759;
+  --state-upcoming: #ff9f0a;
+  --state-ended: #8e8e93;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 순수 검정을 쓰지 않는다 */
+    --background: #1c1c1e;
+    --surface: #2c2c2e;
+    --separator: #38383a;
+
+    --label: #f2f2f7;
+    --label-secondary: #ebebf599;
+    --label-tertiary: #ebebf54d;
+
+    --accent: #0a84ff;
+
+    /* 다크에서 채도를 낮춘다 */
+    --state-on-sale: #30d158;
+    --state-upcoming: #ffd60a;
+    --state-ended: #98989d;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-separator: var(--separator);
+  --color-label: var(--label);
+  --color-label-secondary: var(--label-secondary);
+  --color-label-tertiary: var(--label-tertiary);
+  --color-accent: var(--accent);
+  --color-on-sale: var(--state-on-sale);
+  --color-upcoming: var(--state-upcoming);
+  --color-ended: var(--state-ended);
+
+  /* 시스템 폰트 스택. 웹폰트를 로드하지 않는다 */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo,
+    'Noto Sans JP', sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--label);
+  font-family: var(--font-sans);
+  /* 일본어 본문 기준 */
+  font-size: 16px;
+  line-height: 1.6;
+}
