@@ -11,6 +11,19 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - `docs/data-collection-design.md` — 어댑터 계약 · 본문 검증 · 스케줄
 - `docs/source-mapping.md` — 필드 매핑 · 태그 인벤토리 · 필터 규칙
 
+## 스택 규약
+
+| 항목 | 규약 |
+| --- | --- |
+| 프레임워크 | NestJS 11. 어댑터 1개 = provider 1개 |
+| 진입점 | `nest-commander` CLI 커맨드. Cloud Run Job이 이걸 실행한다 |
+| 스케줄 | 프로덕션은 Cloud Scheduler. **`@nestjs/schedule`은 로컬 전용** |
+| 중복 실행 | `pg_advisory_lock(source_id)`. 못 잡으면 즉시 종료(`skipped_locked`) |
+| 창구 폴링 | 오늘 예정이 없으면 **외부 요청 0건**으로 종료(`skipped_idle`) |
+| HTTP | 소스별 최소 간격, 동시 요청 1, 백오프 있는 재시도 |
+| 로깅 | winston + `nest-winston`. **`winston-daily-rotate-file` 미사용** (stdout 수집) |
+| 검증 | `class-validator` + `class-transformer` |
+
 ## 구조
 
 ```

@@ -10,6 +10,11 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 
 `docs/db-schema.md` — 테이블 정의 · 제약 · 인덱스 · migration 순서
 
+## 스택 규약
+
+TypeORM 0.3 + `pg`. 로컬 DB는 `docker compose`로 띄운 PostgreSQL이다.
+migration 명령은 `be/`의 npm script를 쓴다 (`migration:generate` / `run` / `revert` / `show`).
+
 ## 규약
 
 - **`synchronize: false`.** 엔티티를 고쳐서 반영하지 않는다. 항상 migration
