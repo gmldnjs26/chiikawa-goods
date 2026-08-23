@@ -49,3 +49,16 @@ path:line: [심각도] 문제. 어떻게 어긋났는지.
 
 심각도는 **차단 위험 / 정책 위반 / 규범 이탈** 3단계.
 차단 위험이 하나라도 있으면 머지하지 않는다.
+
+## 참조
+
+규범 판단의 근거 문서. 검사 결과에 인용한다.
+
+| 대상 | URL |
+| --- | --- |
+| robots.txt | https://www.rfc-editor.org/rfc/rfc9309.html |
+| Shopify Ajax API | https://shopify.dev/docs/api/ajax — 공식이 여는 경로와 그렇지 않은 경로의 구분 |
+| 대상 사이트 이용규약 | 각 소스의 `/policies/terms-of-service` — `docs/source-mapping.md`에 확인일과 함께 |
+
+**규범은 문서보다 좁게 잡는다.** 「금지라고 안 써 있으니 해도 된다」는 판단을 하지 않는다.
+공식문서가 허용하는 것과 우리가 하는 것 사이의 여유가 차단당하지 않는 이유다.

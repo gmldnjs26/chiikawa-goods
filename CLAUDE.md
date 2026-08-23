@@ -13,6 +13,7 @@
 | `docs/db-schema.md` | 테이블 · 제약 · 인덱스 |
 | `docs/source-mapping.md` | 소스 원문 → 컬럼 매핑 · 태그 인벤토리 |
 | `docs/tech-stack.md` | 기술 선정 근거 · 착수 전 검증 항목 |
+| `fe/CLAUDE.md` | `fe/` 구조 · 레이어 경계 · 렌더링 · 데이터 흐름 |
 
 **문서와 코드가 어긋나면 문서를 고친 뒤 코드를 고친다.** 반대로 하지 않는다.
 
@@ -43,7 +44,12 @@
 **GCP는 마지막이다.** 로컬에서 `docker compose`로 Postgres를 띄우고 개발한다.
 크레딧을 개발 기간에 태우지 않는다.
 
-공통 스택: TypeScript / Node 22.18.0(volta 고정) / PostgreSQL.
+`be/`와 `fe/`는 각각 독립 `package.json`이다. 워크스페이스로 묶지 않는다.
+
+**버전 숫자는 `package.json`이 진실이다.** 문서에 적지 않는다.
+왜 최신이 아닌지는 `docs/tech-stack.md` §1.4.
+**공식문서 URL은 각 에이전트의 「공식문서」 절**에만 둔다. 설계 문서에 복사하지 않는다.
+
 세부 규약은 각 에이전트에 있다.
 
 ## 제품 불변식

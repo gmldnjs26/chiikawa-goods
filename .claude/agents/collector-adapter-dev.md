@@ -24,6 +24,19 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 | 로깅 | winston + `nest-winston`. **`winston-daily-rotate-file` 미사용** (stdout 수집) |
 | 검증 | `class-validator` + `class-transformer` |
 
+## 현재 있는 것
+
+```
+be/
+├── src/main.ts                     CommandFactory. HTTP 서버를 띄우지 않는다
+├── src/app.module.ts               ConfigModule + TypeOrmModule
+├── src/commands/health.command.ts  부팅 확인. 외부 요청 0건
+└── src/config/database.config.ts   소켓/TCP 양쪽 (tech-stack.md §2.6)
+```
+
+새 커맨드는 `src/commands/`에, provider로 `app.module.ts`에 등록한다.
+`npm run cli <커맨드>`로 로컬 실행된다.
+
 ## 구조
 
 ```
@@ -72,3 +85,30 @@ Collector → Validator → Normalizer → Deduper → Store
 - 컬렉션 소속만 걸리면 `relevance='mixed'` (그 컬렉션에 다른 작품이 섞여 있다)
 - 제외 대상도 `mention`은 만든다(`relevance='excluded'`, payload 없이). 필터 오류 복구용
 - `collection_run.excluded_count` 기록. 비율 급변은 태그 체계 변경 신호다
+
+## 공식문서
+
+**API 형태를 기억으로 쓰지 않는다.** 이 스택은 버전이 빠르게 움직인다.
+코드를 쓰기 전에 확인하고, 확인한 근거를 커밋 메시지나 코드 주석에 남긴다.
+
+**1순위 — context7 MCP.** `resolve-library-id` → `query-docs`.
+학습 데이터보다 새 문서가 나온다. 라이브러리 API를 쓰는 코드는 이걸 먼저 거친다.
+**2순위 — 아래 URL.** context7에 없거나 결과가 비면 여기를 본다.
+
+**버전 숫자는 `be/package.json`이 진실이다.** 이 표에도, 문서에도 적지 않는다.
+버전 상한이 왜 최신이 아닌지는 `docs/tech-stack.md` §1.4에 있다.
+
+| 대상 | URL |
+| --- | --- |
+| NestJS | https://docs.nestjs.com — 특히 `/fundamentals/custom-providers`, `/techniques/configuration` |
+| nest-commander | https://nest-commander.jaymcdoniel.dev |
+| TypeORM | https://typeorm.io/docs — **`0.3` 문서와 섞이지 않게 주의.** 버전 드롭다운을 확인한다 |
+| `@nestjs/typeorm` | https://docs.nestjs.com/techniques/database |
+| class-validator | https://github.com/typestack/class-validator#validation-decorators |
+| winston / nest-winston | https://github.com/winstonjs/winston · https://github.com/gremo/nest-winston |
+| undici (fetch) | https://undici.nodejs.org/#/docs/api/Dispatcher — 타임아웃·재시도 옵션 |
+
+**TypeORM 1의 함정은 `docs/tech-stack.md` §1.5에 정리돼 있다.** 특히:
+`where`에 `null`/`undefined`가 들어가면 던진다 · 전역 함수(`getRepository`)가 없다 ·
+드라이버 옵션 타입의 deep import가 없다 · `.env` 자동 로드가 없다.
+0.3 시절 코드 예제를 그대로 붙이면 여기서 깨진다.

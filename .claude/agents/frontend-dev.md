@@ -1,6 +1,6 @@
 ---
 name: frontend-dev
-description: Next.js 화면 구현. 홈 2~3섹션, 카드, 캘린더, 필터, 상태 뱃지. fe/ 안의 컴포넌트·페이지·스타일 작업에 사용한다.
+description: Next.js 화면 구현. 홈 3섹션, 카드, 캘린더, 필터, 상태 뱃지. fe/ 안의 컴포넌트·페이지·스타일 작업에 사용한다.
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
@@ -8,6 +8,8 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 
 ## 시작 전 반드시 읽는다
 
+- **`fe/CLAUDE.md` — 구조 · 레이어 경계 · 렌더링 기본값 · 데이터 흐름.**
+  이 에이전트는 **디자인과 화면 규약**을 담당한다. 구조 규칙은 그쪽에 있고 여기 복사하지 않는다
 - `docs/plan.md` §6 — 화면 규약
 - `prototype/index.html` — 레이아웃·뱃지·필터의 검증된 원안. **여기서 벗어날 때는 이유를 말한다**
 
@@ -17,11 +19,27 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 | --- | --- |
 | 프레임워크 | Next.js 16 App Router + React 19 |
 | 스타일 | Tailwind 4 + `clsx` + `tailwind-merge` |
-| 서버 상태 | TanStack Query 5 |
-| 스키마 | zod 4 |
+| 서버 상태 | 서버 컴포넌트가 기본. TanStack Query는 아카이브 페이지네이션 전용 (`fe/CLAUDE.md` §4) |
+| 스키마 | zod 4. **API 응답은 경계에서 파싱한다** (`fe/CLAUDE.md` §3) |
 | 빌드 | `output: 'standalone'` + Dockerfile |
 | 미사용 | **zustand**(서버 상태만 다룬다) · **Firebase**(인증 없음) |
 | 폰트 | 시스템 폰트 스택. 웹폰트를 로드하지 않는다 (§디자인) |
+
+## 현재 있는 것
+
+```
+fe/src/
+├── app/layout.tsx                  lang="ja", QueryProvider, 시스템 폰트
+├── app/globals.css                 시맨틱 토큰(라이트/다크) + @theme inline
+├── app/page.tsx                    자리표시. 실제 화면은 아직 없다
+├── app/providers/query-provider.tsx
+└── lib/cn.ts                       clsx + tailwind-merge
+```
+
+`@/`는 `fe/src/`다. 도메인 컴포넌트는 `src/modules/<도메인>/components/`에 만든다.
+
+색은 `globals.css`의 토큰만 쓴다 — `text-label-secondary`, `bg-surface`, `text-on-sale` 등.
+새 색이 필요하면 **토큰을 추가하고** 쓴다. 컴포넌트에 hex를 박지 않는다.
 
 ## 화면 규약
 
@@ -102,3 +120,34 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 현재 문안은 전부 임시안이고 공개 전 톤 검수를 받는다.
 
 숫자·날짜는 일본 관례를 따른다 — `¥2,970`, `8/25(月) 18:00頃`, `全8種`.
+
+## 공식문서
+
+**API 형태를 기억으로 쓰지 않는다.** 이 스택은 버전이 빠르게 움직인다.
+코드를 쓰기 전에 확인하고, 확인한 근거를 커밋 메시지나 코드 주석에 남긴다.
+
+**1순위 — context7 MCP.** `resolve-library-id` → `query-docs`.
+학습 데이터보다 새 문서가 나온다. 라이브러리 API를 쓰는 코드는 이걸 먼저 거친다.
+**2순위 — 아래 URL.** context7에 없거나 결과가 비면 여기를 본다.
+
+**버전 숫자는 `fe/package.json`이 진실이다.** 이 표에도, 문서에도 적지 않는다.
+버전 상한이 왜 최신이 아닌지는 `docs/tech-stack.md` §1.4에 있다.
+
+| 대상 | URL |
+| --- | --- |
+| **Next.js — 설치된 버전의 문서** | `fe/node_modules/next/dist/docs/` — **1순위.** `next` 패키지에 문서가 같이 들어온다 |
+| Next.js — 온라인 | https://nextjs.org/docs/app · 색인 https://nextjs.org/docs/llms.txt |
+| React | https://react.dev/reference/react |
+| Tailwind CSS | https://tailwindcss.com/docs — **v4는 설정이 CSS에 있다.** `tailwind.config.js`를 만들지 않는다 |
+| TanStack Query | https://tanstack.com/query/latest/docs/framework/react/overview |
+| zod | https://zod.dev |
+| Apple HIG | https://developer.apple.com/design/human-interface-guidelines — 아래 §디자인의 출처 |
+
+`fe/CLAUDE.md` 맨 아래 `nextjs-agent-rules` 마커 블록은 **Next.js가 `next dev`에서 관리한다.**
+지우지 않는다. 마커 밖은 건드리지 않으므로 우리 규칙과 섞이지 않는다.
+
+**Next.js 16에서 바뀐 것** (학습 데이터와 어긋나는 지점):
+- Turbopack이 기본이다. webpack은 `--webpack` 플래그
+- **`next lint`가 제거됐다.** `next build`는 린트를 돌리지 않는다. `npm run lint`를 따로 돌린다
+- ESLint 설정은 flat config. `eslint-config-next/core-web-vitals` + `/typescript`를 스프레드한다
+- 버전을 올릴 때는 `npx next upgrade` — 번들된 문서도 같이 갱신된다
