@@ -22,7 +22,14 @@
 
 ## 1. Shopify → mention
 
-취득: `sitemap_collections_1.xml` → 각 컬렉션 `/collections/<handle>/products.json`
+취득: `/sitemap.xml`(인덱스) → 자식 sitemap → 각 컬렉션 `/collections/<handle>/products.json`
+
+> [!warning] 자식 sitemap URL을 하드코딩하면 안 된다
+> `chiikawamogumogu.shop/sitemap_collections_1.xml`은 **HTTP 400**이다.
+> 실제 URL에 쿼리 파라미터가 붙어 있다 —
+> `sitemap_collections_1.xml?from=474185662785&to=658000019777`
+> `from`/`to` 값은 스토어마다 다르고 변한다.
+> **반드시 `/sitemap.xml` 인덱스를 먼저 읽고 그 안의 URL을 그대로 쓴다.**
 
 | mention 컬럼 | 원문 | 비고 |
 | --- | --- | --- |
@@ -97,7 +104,16 @@ variant별로 판정이 갈린다. 우리 `item`은 상품 1개 = 카드 1장이
 | --- | --- | --- | --- | --- |
 | `chiikawamarket.jp` | `20260821` | `PRE20260312` | `RE20260415` | `販売開始前` |
 | `nagano-market.jp` | 동일 | `PRE20260826` (+`予約`) | 동일 | `販売開始前` |
-| `chiikawamogumogu.shop` | `2026年8月7日発売商品` | 미확인 | 미확인 | 미확인 |
+| `chiikawamogumogu.shop` | `2026年8月7日発売商品` | **없음** | **없음** | **없음** |
+
+> [!important] もぐもぐ本舗에는 예약·재입고 태그가 존재하지 않는다 (확인 2026-08-23)
+> 상품 30건의 태그 합집합에 `PRE` `RE` `予約` `再入荷` `販売開始前`이 **하나도 없었다.**
+> 결과:
+> - **예약 사전 감지가 이 소스에는 적용되지 않는다.** 차별점이 소스마다 다르다
+> - **재입고 백필도 불가능하다.** 재입고는 `available` 전이를 실시간으로 잡는 것뿐
+> - 상태 판정은 `available` 단독 (`販売開始前`이 없으므로 `UPCOMING`이 안 나온다)
+>
+> `config`의 예약·재입고 규칙을 `null`로 두고, 어댑터는 규칙이 없으면 그 판정을 건너뛴다.
 
 **정규식을 코드에 두지 않는다.** `source.config`에 둔다 ([[db-schema]] §2).
 
@@ -203,7 +219,26 @@ title 에 '発売'   → release
 `날짜 + 브랜드 + kind` 규칙으로 내려간다 ([[db-schema]] §6).
 상품별 태그(`20260821` / `RE...`)가 개별 유형의 근거다.
 
-### 5.3 중복 핸들
+### 5.3 컬렉션 핸들 형식이 스토어마다, 심지어 같은 스토어 안에서도 다르다
+
+`chiikawamogumogu.shop` 실측 — 발매 컬렉션 핸들이 **한 스토어에서 4종 이상 혼재**한다.
+
+| 핸들 | 제목 |
+| --- | --- |
+| `new2024-11-14` | `2024年11月14日　発売商品` |
+| `new20250320` | `2025年3月20日　発売商品` |
+| `new2026-2-13` | `2026年2月13日 発売商品` ← **0 패딩 없음** |
+| `new2025-02-20` | `2月20日 発売商品` ← **제목에 연도 없음** |
+
+> [!warning] 핸들에서 날짜를 파싱하지 않는다
+> 형식이 4종이고 0 패딩도 일정하지 않다. 제목도 연도가 빠지는 경우가 있다.
+> **`primary_date`는 소속 상품의 발매 태그에서 가져온다.** 컬렉션 핸들은 `grouping_key`로만 쓴다.
+> 제목에서만 날짜를 얻어야 하는 경우, 연도가 없으면 컬렉션의 다른 근거(상품 태그)로 보정한다.
+
+또 `new2025-10-17`과 `new2025-11-14`의 제목에 **전각 공백(`　`)** 이 섞여 있다.
+제목 파싱 전에 전각 공백을 정규화한다.
+
+### 5.4 중복 핸들
 
 `pre20251024` / `pre20251024_`, `chiikawababy` / `chiikawababy_` — 접미 `_` 변종이 존재한다.
 `grouping_key`는 **정규화한다**(말미 `_` 제거). 아니면 같은 발표가 둘로 갈린다.
@@ -212,22 +247,51 @@ title 에 '発売'   → release
 
 ## 6. source.config 스펙 (v0)
 
+**`chiikawamarket.jp` / `nagano-market.jp`**
+
 ```json
 {
   "release_tag":  "^(\\d{8})$",
   "preorder_tag": "^PRE(\\d{8})$",
   "restock_tag":  "^RE(\\d{8})$",
   "upcoming_tag": "販売開始前",
-  "date_format":  "YYYYMMDD",
   "tax_included": true,
   "default_acquisition": "fixed",
   "default_region": "online",
-  "collection_sitemap": "/sitemap_collections_1.xml"
+  "supports_preorder_detection": true,
+  "supports_restock_backfill": true
 }
 ```
 
-`chiikawamogumogu.shop`은 `release_tag`가 `^(\\d{4})年(\\d{1,2})月(\\d{1,2})日発売商品$`,
-`date_format`이 `YYYY年M月D日`다. **코드는 동일하다.**
+**`chiikawamogumogu.shop`**
+
+```json
+{
+  "release_tag":  "^(\\d{4})年(\\d{1,2})月(\\d{1,2})日発売商品$",
+  "preorder_tag": null,
+  "restock_tag":  null,
+  "upcoming_tag": null,
+  "tax_included": true,
+  "default_acquisition": "fixed",
+  "default_region": "online",
+  "supports_preorder_detection": false,
+  "supports_restock_backfill": false,
+  "label_tags": ["川越", "otaru", "kyoto-fusimi", "古本屋"]
+}
+```
+
+**코드는 동일하다.** 규칙이 `null`이면 해당 판정을 건너뛴다.
+`supports_*` 플래그는 무음 감지에 쓴다 — 예약 감지를 지원하지 않는 소스에
+"예약이 안 잡힌다"는 경보를 내면 안 된다.
+
+### 6.1 점포 한정 상품 — `region`이 아니다
+
+もぐもぐ本舗에는 `川越店限定 扇子` 같은 상품이 있고, 컬렉션에 `kawagoe` `otaru` `kyoto-fusimi`가 있다.
+
+> **점포 한정이지만 온라인에서 살 수 있다.** 지역 제약이 아니므로 `region`에 넣으면 틀린다.
+
+→ **`item.labels`(신규)** 에 넣고 카드에 칩으로 낸다. 캐릭터 태그(`ハチワレ` `うさぎ`)도 같은 성격이다.
+`region`은 **"내가 그 장소에 가야 하는가"** 일 때만 쓴다 (팝업·실점포 이벤트).
 
 ---
 
@@ -240,6 +304,7 @@ title 에 '発売'   → release
 | `item` | `price_varies boolean` | variant 간 가격 차이 (§2.1) |
 | `item` | `variant_available int` / `variant_total int` | `一部品切れ` 표시 |
 | `status_history` | `is_backfilled boolean` | 태그 백필과 실시간 관측 구분 (§3.4) |
+| `item` | `labels text[]` | 점포 한정·캐릭터 등 정보 라벨 (§6.1). `region`과 다르다 |
 
 ---
 
@@ -247,7 +312,10 @@ title 에 '発売'   → release
 
 | # | 항목 | 영향 |
 | --- | --- | --- |
-| 1 | `chiikawamogumogu.shop`의 예약·재입고 태그 형식 | `config` 값 확정 불가. 어댑터 코드는 무영향 |
-| 2 | `販売開始前` 태그가 세 소스 모두 동일한지 | 다르면 `config.upcoming_tag`로 흡수 |
-| 3 | `product.id`가 스토어 간 충돌하지 않는지 | `external_id`는 `source_id`와 복합키라 문제없음 |
-| 4 | 컬렉션 sitemap이 여러 페이지로 나뉘는 경우 | `sitemap_collections_2.xml` 존재 여부 확인 |
+| 1 | `product.id`가 스토어 간 충돌하지 않는지 | `external_id`는 `source_id`와 복합키라 문제없음 |
+| 2 | もぐもぐ本舗의 상품 수가 늘면 sitemap이 분할되는지 | `/sitemap.xml` 인덱스를 매번 읽으므로 자동 대응 |
+| 3 | `nagano-market.jp`의 컬렉션 핸들 형식 | 확인은 `chiikawamarket.jp`만 했다 |
+| 4 | 캐릭터 태그 목록의 전체 범위 | `labels` 표시 정책에 영향 |
+
+**해소됨** — もぐもぐ本舗 태그 체계(예약·재입고 **없음**), sitemap 취득 방식(인덱스 필수),
+컬렉션 핸들 형식(파싱 금지), 점포 한정 취급(`labels`).

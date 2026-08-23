@@ -196,6 +196,7 @@ CREATE TABLE item (
   acquisition   text NOT NULL,   -- CHECK: fixed|random
   series_total  integer,         -- random일 때 총 종류 수
   region        text NOT NULL DEFAULT 'online',  -- online|national|tokyo|osaka|nagoya|...
+  labels        text[] NOT NULL DEFAULT '{}',    -- '川越店限定','ハチワレ' 등 정보 라벨
 
   -- 상태 (현재값. 이력은 status_history)
   status        text NOT NULL,   -- CHECK: UPCOMING|ON_SALE|ENDED
@@ -220,6 +221,7 @@ CREATE INDEX ON item (status, release_on) WHERE suppressed_at IS NULL;
 CREATE INDEX ON item (channel)            WHERE suppressed_at IS NULL;
 CREATE INDEX ON item (brand_id)           WHERE suppressed_at IS NULL;
 CREATE INDEX ON item (title_norm);
+CREATE INDEX ON item USING gin (labels);
 ```
 
 **`channel`을 `item`에 비정규화해 둔다.** 소스에서 파생되는 값이지만
@@ -233,6 +235,10 @@ CREATE INDEX ON item (title_norm);
 > [!note] `region`은 도시 단위까지 (`online` `national` `tokyo` `osaka` `nagoya` …)
 > 팝업·실점포가 대부분 대도시에 열리므로 도시 단위가 실용적이다.
 > v0에서 실제로 쓰이는 값은 `online`뿐이다.
+
+> [!warning] `region`과 `labels`를 혼동하지 않는다
+> `川越店限定` 상품은 **온라인에서 살 수 있다.** 지역 제약이 아니므로 `region`이 아니라 `labels`다.
+> `region`은 **"내가 그 장소에 가야 하는가"** 일 때만 쓴다 ([[source-mapping]] §6.1).
 
 `CHECK` 2개가 [[plan-draft]] §6.3의 카드 규약을 DB에서 강제한다 —
 랜덤인데 종류 수가 없거나, 실점포인데 지역이 온라인인 카드는 애초에 저장되지 않는다.
