@@ -103,6 +103,7 @@ CREATE TABLE collection_run (
   status        text NOT NULL,        -- CHECK: running|success|failed
   mention_count integer NOT NULL DEFAULT 0,
   new_count     integer NOT NULL DEFAULT 0,
+  excluded_count integer NOT NULL DEFAULT 0,   -- 관련성 필터로 제외한 건수
   http_status   integer,
   failure_kind  text,                 -- CHECK: network|http|validation|parse|blocked
   error_message text
@@ -132,6 +133,7 @@ CREATE TABLE mention (
   raw_payload     jsonb,                  -- 90일 후 NULL 처리 (본문만 삭제)
   payload_hash    text NOT NULL,          -- 내용 변경 판정
   payload_purged_at timestamptz,
+  relevance       text NOT NULL DEFAULT 'included',  -- CHECK: included|mixed|excluded
   observed_at     timestamptz NOT NULL DEFAULT now(),
   UNIQUE (source_id, external_id, payload_hash)
 );
@@ -144,6 +146,13 @@ CREATE INDEX ON mention (observed_at)
 > `(source_id, external_id)`만으로 잡으면 **내용이 바뀌어도 새 행이 안 생긴다.**
 > 해시를 포함하면 — 같은 내용 재관측은 무시되고(§10.1 보존 규칙), 내용이 바뀌면 새 행이 쌓여
 > 변경 이력이 된다. 이게 파서 회귀 검증의 근거다.
+
+> [!important] `relevance='excluded'`는 치이카와가 아닌 상품이다
+> `nagano-market.jp`는 나가노의 다른 작품과 섞인 스토어다. 제외 대상도 **행은 남긴다**
+> (제목·URL·태그만, `raw_payload` 없이). 필터 규칙이 틀렸을 때 재처리로 복구하기 위해서다.
+> 판정 규칙은 [[source-mapping]] §7.
+>
+> `excluded_count`의 **비율이 급변하면 경보**다. 평소 70% 제외가 99%가 되면 태그 체계가 바뀐 것이다.
 
 **행은 영구, 본문만 90일.** `raw_payload`를 `NULL`로 만들고 `payload_purged_at`을 찍는다.
 행 자체를 지우면 감사 추적이 끊긴다 ([[tech-stack]] §2.7).
