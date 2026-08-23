@@ -56,7 +56,9 @@ CREATE TABLE source (
   code          text NOT NULL UNIQUE,          -- 'chiikawa_market', 'nagano_market'
   name          text NOT NULL,
   kind          text NOT NULL,                 -- CHECK: official_store|fan_blog|press|konbini|prize|gacha|apparel|retail
+  platform      text NOT NULL,                 -- 'shopify','wordpress','nextjs','custom' — 어댑터 선택 키
   fetch_kind    text NOT NULL,                 -- CHECK: json|rss|atom|html|sitemap
+  config        jsonb NOT NULL DEFAULT '{}',   -- 사이트별 파싱 규칙 (태그 날짜 형식 등)
   base_url      text NOT NULL,
   channel       text NOT NULL,                 -- 이 소스에서 나온 item의 기본 채널 (§5)
   interval_sec  integer NOT NULL,
@@ -74,6 +76,18 @@ CREATE TABLE source (
 - `channel`을 여기 두는 이유는 §5
 
 **시드**는 migration에 넣는다. 소스 추가 = migration 1개.
+
+> [!important] `platform`이 어댑터를 고르고, `config`가 차이를 흡수한다
+> Shopify 스토어 3곳이 **같은 어댑터 코드**를 쓰지만 태그 규칙이 다르다 —
+> `chiikawamarket.jp`는 `20260821`, `chiikawamogumogu.shop`은 `2026年8月7日発売商品`이다.
+> 정규식을 코드에 박으면 스토어 추가마다 배포가 필요하다. `config`에 둔다.
+>
+> ```json
+> { "release_tag": "^(\\d{8})$",
+>   "preorder_tag": "^PRE(\\d{8})$",
+>   "restock_tag": "^RE(\\d{8})$",
+>   "upcoming_tag": "販売開始前" }
+> ```
 
 ---
 

@@ -234,11 +234,44 @@ NestJS provider 1개 = 어댑터 1개. 실행 진입점은 `nest-commander` 커�
 
 ### Tier 0 — v0
 
-| 소스 | 취득 경로 |
-| --- | --- |
-| 공식 스토어 ×2 (`chiikawamarket` / `nagano-market`) | `sitemap_collections_1.xml` → `/collections/pre*/products.json` |
+**어댑터 1개(Shopify) + 소스 3행.** 실지 확인 결과 셋 다 Shopify다 (2026-08-23).
 
-**v0의 어댑터는 이 2개뿐이다.** 예약 사전 감지는 공식 스토어에만 존재한다.
+| 소스 | 도메인 | 플랫폼 |
+| --- | --- | --- |
+| ちいかわマーケット | `chiikawamarket.jp` | Shopify |
+| ナガノマーケット | `nagano-market.jp` | Shopify |
+| ちいかわもぐもぐ本舗 | `chiikawamogumogu.shop` | Shopify |
+
+취득 경로는 공통 — `sitemap_collections_1.xml` → `/collections/<handle>/products.json`
+
+> [!important] 어댑터는 **플랫폼 단위**, `source` 행은 **사이트 단위**다
+> Shopify 스토어가 늘어도 어댑터 코드는 1개다. 사이트별 차이는 `source.config`로 흡수한다.
+> **소스 추가 비용 = `source` 행 1개 + migration 1개.** 코드 변경 없음.
+
+**사이트별 차이 — 태그 날짜 형식이 다르다**
+
+| 소스 | 발매일 태그 | 예약 태그 | 재입고 태그 | handle |
+| --- | --- | --- | --- | --- |
+| `chiikawamarket.jp` | `20260821` | `PRE20260312` | `RE20260415` | JAN 코드 (`4571609400868`) |
+| `nagano-market.jp` | 동일 | `PRE20260826` + `販売開始前` + `予約` | 동일 | JAN 코드 |
+| `chiikawamogumogu.shop` | **`2026年8月7日発売商品`** | 미확인 | 미확인 | SKU (`chth-0079`) |
+
+**같은 플랫폼이라도 태그 규칙은 스토어 운영자가 정한다.** 정규식을 코드에 하드코딩하면 안 된다.
+
+> [!note] `販売開始前` 태그를 실물로 확인했다
+> `nagano-market.jp`의 예약 상품에 `販売開始前` + `予約` + `PRE20260826`이 함께 붙어 있고
+> `available: false`였다. §3.2의 판정 규칙(태그 + `available` 병행)이 실증됐다.
+
+### 보류 — ちいかわぽけっとグッズストア
+
+`chiikawa-pocket-goods-store.com`. **Shopify가 아니다.**
+
+- `products.json` → **404**
+- 상품 목록이 **Next.js 클라이언트 렌더링**이라 HTML에 상품이 없다
+- `robots.txt` = `User-agent: * / Disallow: /api/` → **데이터를 담은 내부 API가 금지 대상**
+
+즉 규범을 지키는 한 **정상적인 취득 경로가 없다.** SSR·RSS·sitemap 상품 페이지 유무를
+재확인하고, 없으면 Tier 3(보류)로 둔다. 우회는 하지 않는다 ([[plan-draft]] §2.1).
 
 #### 컬렉션 (실지 확인 2026-08-23)
 
