@@ -121,12 +121,16 @@ append-only. `item_id` / `status` / `observed_at` / `source_mention_id`
 
 ## 3. 상태 판정
 
-### 3.1 상태와 전이는 다른 층이다
+### 3.1 상태 · 전이 · 예정은 각각 다른 층이다
 
 ```
-상태(state)   UPCOMING / ON_SALE / ENDED    ← 지금 무엇인가.  item.status
-전이(event)   status_history 연속 2행        ← 무슨 일이 났나.  알림 트리거
+상태(state)    UPCOMING / ON_SALE / ENDED   ← 지금 살 수 있나.   item.status
+전이(event)    status_history 연속 2행       ← 무슨 일이 났나.   알림 트리거
+예정(schedule) scheduled_event               ← 앞으로 무슨 일이. UI 뱃지·캘린더
 ```
+
+**화면 뱃지 = 상태 + 가장 가까운 예정.** 상태를 늘리지 않는다.
+`RESTOCK_SCHEDULED` 같은 상태를 추가하면 `UPCOMING`과 의미가 겹치고, 재입고가 반복될 때 또 무너진다.
 
 ### 3.2 판정 규칙
 
@@ -140,7 +144,38 @@ append-only. `item_id` / `status` / `observed_at` / `source_mention_id`
 | `ON_SALE` | 없음 | **`true`** |
 | `ENDED` | 없음 | `false` |
 
-### 3.3 전이
+### 3.3 예정 (scheduled_event)
+
+**"품절이지만 재입고가 예고된 것"** 을 표현하는 층이다. 상태는 `ENDED` 그대로다.
+
+`item_id` / `kind`(`preorder` `release` `restock`) / `date` / `date_text` / `undecided` / `source_mention_id`
+
+| 필드 | 용도 |
+| --- | --- |
+| `date` | 날짜가 확정된 경우만 |
+| `date_text` | **`9月下旬` 처럼 폭이 있는 표기를 원문 그대로** |
+| `undecided` | `再入荷未定`이 명시된 경우 |
+
+> [!warning] 폭 있는 날짜를 날짜로 바꾸지 않는다
+> `9月下旬`을 `9/21`로 정규화하면 **없는 정보를 만들어낸다.** 화면에도 `9月下旬` 그대로 낸다.
+> 캘린더는 날짜 축이므로 **`date`가 있는 예정만** 놓는다. `date_text`만 있는 것은 목록에만 낸다.
+
+**뱃지 매핑** ([[plan-draft]] §3.2)
+
+| 상태 | 예정 | 뱃지 |
+| --- | --- | --- |
+| `ON_SALE` | — | 🟢 販売中 |
+| `ON_SALE` | (직전 전이가 재입고) | 📦 再入荷 |
+| `UPCOMING` | 예약/발매 | 🔜 D-n |
+| `ENDED` | 재입고 (`date`) | 🔵 再入荷 9/15 ・ D-n |
+| `ENDED` | 재입고 (`date_text`) | 🔵 再入荷 9月下旬 |
+| `ENDED` | 재입고 `undecided` | ⚪️ 再入荷未定 |
+| `ENDED` | 없음 | 🔴 完売 / 販売終了 |
+
+> [!important] 이 3분기가 유저 행동을 가른다
+> **기다린다 / 판단 못 한다 / 포기한다.** 하나로 뭉개면 안 된다.
+
+### 3.4 전이
 
 | 전이 | 의미 |
 | --- | --- |
@@ -153,7 +188,7 @@ append-only. `item_id` / `status` / `observed_at` / `source_mention_id`
 > 재입고 후의 상태는 `ON_SALE`이다. 상태 축에 두면 재입고↔품절 반복을 표현할 수 없다.
 > `re*` 컬렉션은 이 전이의 힌트일 뿐 판정 근거가 아니다.
 
-### 3.4 개시 시각
+### 3.5 개시 시각
 
 사이트에 텍스트로 존재하지 않는다. 실측 히스토그램(독립 2회 조사 일치):
 
@@ -211,7 +246,10 @@ NestJS provider 1개 = 어댑터 1개. 실행 진입점은 `nest-commander` 커�
 | --- | --- | --- |
 | 예약 | `pre*` | median 3일 / 최대 20일 |
 | 발매 | `YYYYMMDD` | 3일 전 (**내용은 비어 있음**) |
-| 재입고 | `re*` | **0일** |
+| 재입고 | `re*` | **0일이 기본. 예고되는 경우가 있다** |
+
+> 재입고는 사전 예고가 없는 것이 기본이지만, 공식이 `9月下旬 再入荷予定`처럼 알리는 경우가 있다.
+> 이때는 §3.3의 `scheduled_event`로 잡는다. **예고 0일을 전제로 화면을 짜면 이 정보가 사라진다.**
 
 ### Tier 1 — v1
 
@@ -368,6 +406,8 @@ PR TIMES 키워드 JSON · `chiikawa.jp`(WP REST) · 세븐(RSS) · 로손(SSR) 
 | D-1 | 전일 |
 | `UPCOMING → ON_SALE` | 즉시 |
 | `ENDED → ON_SALE` (재입고) | 즉시. **반복 발생** |
+| 재입고 예정 신규 감지 | `scheduled_event` 생성 시 즉시 |
+| 재입고 예정일 D-1 | `date`가 있을 때만 |
 
 > [!warning] 중복 방지 키는 `(drop_id, trigger)`가 아니다
 > 재입고는 같은 `drop`에서 여러 번 일어난다. `(drop_id, trigger)`에 unique를 걸면
