@@ -25,24 +25,29 @@
 
 ### 1.1 애플리케이션
 
-| 층 | 선정 | 버전 | 근거 |
-| --- | --- | --- | --- |
-| 언어 | TypeScript | 5.x | `tomomachi` 동일 |
-| 런타임 | Node.js (volta 고정) | 22.18.0 | `tomomachi` 동일 버전 |
-| 프레임워크 | NestJS | 11 | `tomomachi` 동일 |
-| 배치 진입점 | `nest-commander` | 3.x | 어댑터 1개 = provider 1개. `tomomachi`의 `src/batch/` 패턴 |
-| ORM | TypeORM | 0.3 | `tomomachi` 동일. **migration-driven, `synchronize: false`** |
-| DB 드라이버 | `pg` | 8.x | 표준 Postgres |
-| 검증 | `class-validator` + `class-transformer` | — | `tomomachi` 동일 |
-| 로깅 | `winston` + `nest-winston` | — | **`winston-daily-rotate-file` 제외** (§1.4) |
-| 테스트 | Jest + `ts-jest` | — | `tomomachi` 동일 |
-| 린트 | ESLint 9 + Prettier + `simple-import-sort` | — | `tomomachi` 동일 |
+> **버전 숫자는 `be/package.json`·`fe/package.json`이 진실이다.** 아래 표는 **선정 근거**만 남긴다.
+> 2026-08-23 실측(npm registry)으로 결정했고, 갱신 시 §1.4의 상한 근거를 함께 확인한다.
+
+| 층 | 선정 | 근거 |
+| --- | --- | --- |
+| 언어 | TypeScript 5 | **5에 머문다. 상한 근거는 §1.4** — 최신은 7이지만 도구가 못 받는다 |
+| 런타임 | Node.js | Active LTS(24) 목표. `engines`는 `^22.13 \|\| >=24.11` — TypeORM 1.x가 요구하는 범위 |
+| 프레임워크 | NestJS 11 | `tomomachi` 동일 |
+| 배치 진입점 | `nest-commander` | 어댑터 1개 = provider 1개. `tomomachi`의 `src/batch/` 패턴 |
+| HTTP 진입점 | `@nestjs/platform-express` | 읽기 API 전용. **같은 코드베이스의 다른 진입점** → §2.8 |
+| ORM | **TypeORM 1** | `tomomachi`는 0.3이지만 신규 프로젝트다 → §1.5 |
+| DB 드라이버 | `pg` | 표준 Postgres |
+| snake_case | `typeorm-naming-strategy` | `tomomachi`의 `typeorm-naming-strategies`(복수형)는 TypeORM 1을 못 받는다 → §1.5 |
+| 검증 | `class-validator` + `class-transformer` | `tomomachi` 동일 |
+| 로깅 | `winston` + `nest-winston` | **`winston-daily-rotate-file` 제외** (§1.6) |
+| 테스트 | Jest + `ts-jest` | `tomomachi` 동일 |
+| 린트 | ESLint 9 + Prettier + `simple-import-sort` | **9에 머문다. 상한 근거는 §1.4** |
 
 ### 1.2 프론트엔드 (v0부터)
 
 | 층 | 선정 | 근거 |
 | --- | --- | --- |
-| 프레임워크 | Next.js 16 (App Router) + React 19 | `tomomachi-fe` 동일 |
+| 프레임워크 | Next.js 16 (App Router) + React 19 | `tomomachi-fe` 동일. **16에서 Turbopack이 기본, `next lint` 제거** |
 | 스타일 | Tailwind CSS 4 + `clsx` + `tailwind-merge` | `tomomachi-fe` 동일 |
 | 서버 상태 | TanStack Query 5 | `tomomachi-fe` 동일 |
 | 스키마 | zod 4 | `tomomachi-fe` 동일 |
@@ -50,7 +55,7 @@
 | **제외** | `zustand` | 서버 상태만 다룬다. 클라이언트 전역 상태 없음 |
 | **제외** | Firebase Auth | 로그인이 없다 ([[plan]] §1.4). v1 웹 푸시 구독도 익명 |
 
-> **v0부터 공개 화면이 있다.** 읽기 전용 2섹션 ([[plan]] §8).
+> **v0부터 공개 화면이 있다.** 읽기 전용 3섹션 ([[plan]] §6.2).
 > 도메인·약관·삭제요청 창구가 v0 착수 조건이 된다 ([[plan]] §8.1).
 
 ### 1.3 인프라
@@ -61,15 +66,55 @@
 | IaC | Terraform | `tomomachi-infra` 모듈 재사용 |
 | 컨테이너 레지스트리 | Artifact Registry | 동일 |
 | 배치 실행 | **Cloud Run Job** | 수집기. 외부 호출 표면 없음. 유휴 과금 0 |
-| 웹 | **Cloud Run Service** (공개) + 커스텀 도메인 매핑 | v0부터. 수집기와 **별도 서비스** |
+| 웹 | **Cloud Run Service** (공개) + 커스텀 도메인 매핑 | Next.js. v0부터 |
+| 읽기 API | **Cloud Run Service** (비공개) | NestJS HTTP. `fe/`의 서버 컴포넌트만 호출한다 → §2.8 |
 | 스케줄 | **Cloud Scheduler** (`time_zone: Asia/Tokyo`) | 타임존 직접 지정 |
-| DB | **Cloud SQL for PostgreSQL** `db-f1-micro` | RDB 1개 통합 보관 |
+| DB | **Cloud SQL for PostgreSQL 18** `db-f1-micro` | RDB 1개 통합 보관. 18은 Cloud SQL 기본값이고 로컬 `postgres:18-alpine`과 메이저가 같다 |
 | DB 접속 | `/cloudsql` **Unix 소켓 볼륨 마운트** | `tomomachi`의 Job과 동일 방식 |
 | 시크릿 | Secret Manager (**껍데기만 IaC, 값은 수동**) | `tomomachi` 규약 |
 | CI/CD | GitHub Actions + Workload Identity Federation | 서비스 계정 키 파일 미사용 |
 | 리전 | `asia-northeast1` (도쿄) | 대상 사이트가 전부 일본 |
 
-### 1.4 재사용 가능 여부 정리
+### 1.4 버전 상한은 왜 최신이 아닌가
+
+최신 버전을 못 쓴 곳만 적는다. **상한이 풀리는 조건**을 같이 적어야 다음에 다시 조사하지 않는다.
+
+| 항목 | 최신 | 채택 | 막은 것 | 풀리는 조건 |
+| --- | --- | --- | --- | --- |
+| TypeScript | 7 | 5 | `ts-jest` peer `typescript: >=4.3 <7`<br>`typescript-eslint` peer `typescript: >=4.8.4 <6.1.0` | 둘 다 상한을 올릴 때 |
+| ESLint | 10 | 9 | `eslint-config-next`가 끌어오는 `eslint-plugin-react`가 ESLint 10에서 죽는다 — `context.getFilename is not a function` (실측 확인) | `eslint-config-next`의 `eslint-plugin-react`가 ESLint 10 대응 |
+| `@types/node` | 26 | 24 | 없음 — 런타임(Node 24)에 맞춘다 | Node를 26으로 올릴 때 |
+
+**ESLint는 `be/`와 `fe/`를 같은 메이저로 맞춘다.** `be/`만 10으로 올릴 수는 있지만,
+두 디렉토리의 린트 규약이 갈리는 비용이 메이저 1개의 이득보다 크다.
+
+**TypeScript 7은 네이티브 포트다.** 상한이 풀리면 `emitDecoratorMetadata`(NestJS DI·TypeORM 컬럼 추론·
+`class-validator`가 전부 여기 얹혀 있다)가 그대로 나오는지 **컴파일 결과로** 확인한 뒤 올린다. 문서 문장으로 판단하지 않는다.
+
+### 1.5 TypeORM은 0.3이 아니라 1이다
+
+`tomomachi`는 0.3이고 0.3 브랜치도 계속 유지보수된다(1.1.0과 0.3.31이 같은 날 나왔다).
+그런데도 1을 고른 이유는 **이 프로젝트에 이전할 데이터가 없다**는 것이다.
+0.3 → 1의 breaking change는 거의 전부 "기존 코드가 깨진다"는 성격이고, 우리는 기존 코드가 없다.
+
+가져오는 것:
+
+- `where`에 `null`/`undefined`가 들어오면 **던진다.** 0.3은 조용히 전체 행을 반환했다.
+  「없는 정보를 만들지 않는다」를 ORM이 강제해 준다
+- 전역 함수(`createConnection`·`getRepository`)와 `@EntityRepository` 제거 → DI 경로가 하나로 남는다
+- Node 20+ / ES2023 기준
+
+대가 3개:
+
+1. **`typeorm-naming-strategies`(복수형)를 못 쓴다.** peer가 `^0.2 || ^0.3`이고 2022년 이후 갱신이 없다.
+   `typeorm-naming-strategy`(단수형, peer `^0.3 || ^1.1`)로 바꿨다. 이것도 개인 관리 패키지이므로,
+   막히면 `SnakeNamingStrategy`를 직접 들고 온다 — `DefaultNamingStrategy` 상속 메서드 8개짜리다
+2. **드라이버별 옵션 타입의 deep import가 사라졌다.** `typeorm/driver/postgres/PostgresConnectionOptions`는
+   더 이상 없다. `Extract<DataSourceOptions, { type: 'postgres' }>`로 좁힌다
+3. **`.env` 자동 로드와 `TYPEORM_*` 환경변수가 제거됐다.** 마이그레이션 CLI는 Nest 컨텍스트 밖에서 도니
+   `data-source.ts`가 직접 `dotenv`를 읽는다
+
+### 1.6 재사용 가능 여부 정리
 
 `tomomachi-infra`에서 그대로 가져오는 것과 새로 짜야 하는 것.
 
@@ -81,7 +126,7 @@
 | **`cloud-scheduler`** | ❌ **없음. 신규 작성** |
 | `cloud-storage` | 미사용 (이미지 호스팅 안 함) |
 
-애플리케이션 쪽에서 안 가져오는 것: Firebase Admin, Google Maps / Vision, `adm-zip`, `csv-parse`, `@nestjs/swagger`(v0에 HTTP API 없음), `winston-daily-rotate-file`.
+애플리케이션 쪽에서 안 가져오는 것: Firebase Admin, Google Maps / Vision, `adm-zip`, `csv-parse`, `@nestjs/swagger`(§5), `winston-daily-rotate-file`.
 
 ---
 
@@ -127,7 +172,7 @@ B는 IAM이 단순하지만(OIDC 토큰 + `run.invoker`) **수집기를 기동�
 인증이 새는 순간 아무나 수집기를 돌릴 수 있고, 그건 다시 규범 위반이다.
 Job은 애초에 외부에서 호출할 표면이 없다.
 
-v0부터 공개 웹이 있지만 그건 **읽기 전용 별도 Cloud Run Service**다. 수집기 Job과 배포·권한이 분리된다.
+v0부터 공개 웹이 있지만 그건 **읽기 전용 별도 Cloud Run Service**다 (§2.8). 수집기 Job과 배포·권한이 분리된다.
 
 **A의 대가**: Cloud Run Admin API `:run` 호출 경로 + 서비스 계정 IAM을 짜야 한다. `tomomachi`에 선례가 없다.
 
@@ -224,22 +269,54 @@ Cloud SQL은 `/cloudsql` **Unix 소켓 마운트**, 외부 Postgres는 **TCP + T
 30분 폴링은 대부분 무변경이므로 해시 비교만으로 대부분 줄어든다.
 90일은 운용 1개월 후 실측 증가율로 조정한다.
 
+### 2.8 화면은 DB를 직접 읽지 않는다. 읽기 API를 거친다
+
+Next.js 서버 컴포넌트가 Postgres를 직접 읽는 게 표준 패턴이고 서비스도 하나 덜 든다.
+그래도 API를 거치는 쪽을 골랐다. 이유 2개.
+
+**1. 공개 서비스에 DB 자격증명을 두지 않는다.** 직접 읽기는 인터넷에 노출된 웹 서비스에
+`/cloudsql` 마운트와 DB 비밀번호를 준다. 웹은 공격 표면이 가장 넓은 층이다.
+API를 끼우면 자격증명이 **비공개 서비스에만** 남는다.
+
+**2. `fe/`가 스키마에 직접 묶이지 않는다.** `mention`·`status_history`·`scheduled_event`의
+3층 구조([[data-collection-design]] §3)는 화면이 알 필요가 없다. 화면이 필요한 건 「뱃지와 날짜」다.
+직접 읽으면 뷰 이름 변경이 화면을 깨고, 이 프로젝트는 스키마가 아직 움직인다.
+
+대가: Cloud Run Service가 1개 늘고, `be/`에 HTTP 진입점이 생긴다.
+
+**Job의 무표면 원칙(§2.2)은 유지된다.** 수집기 Job과 읽기 API는 **같은 코드베이스의 다른 진입점**이다.
+수집기를 기동할 수 있는 표면은 여전히 인터넷에 없다.
+
+**읽기 전용이다.** v0에 쓰기 엔드포인트를 만들지 않는다. 수동 교정([[plan]] §7)은 DB 직접 조작이다.
+
+미결정 — 착수 시 정한다:
+
+| 항목 | 선택지 |
+| --- | --- |
+| API 서비스의 인증 | Cloud Run 서비스 간 ID 토큰(`run.invoker`) / 공개 + 읽기 전용 |
+| 응답 형태 | 화면 단위 조립(홈 3섹션을 한 번에) / 리소스 단위 |
+| 페이지네이션 | 아카이브에만 필요하다. 커서 / 오프셋 |
+
 ---
 
 ## 3. 로컬 개발 환경
 
 | 항목 | 방식 |
 | --- | --- |
-| Node | volta로 22.18.0 고정 |
-| DB | `docker compose up -d` (PostgreSQL) — `tomomachi` 동일 |
+| Node | volta 핀은 24.19.0. `engines`가 22.13+도 받으므로 22 LTS에서도 돌아간다 |
+| DB | `be/`에서 `npm run db:up` (`docker compose`). **호스트 포트 5433** — 다른 프로젝트의 5432와 안 부딪히게 |
 | 마이그레이션 | `migration:generate` / `run` / `revert` / `show` |
 | 수집기 실행 | `nest-commander` 커맨드 직접 호출. 어댑터 단위 실행 |
 | 스케줄 | 로컬에 한해 `@nestjs/schedule` 허용. 프로덕션 반영 금지 |
-| 훅 | lefthook (`tomomachi-fe` 동일) |
+| 훅 | lefthook (`tomomachi-fe` 동일). **아직 안 넣음** |
+| 부팅 확인 | `be/`에서 `npm run cli health` — DB 버전과 미적용 마이그레이션 유무만 찍는다. 외부 요청 없음 |
 
 **로컬 실행 시에도 운영 규범을 지킨다.** 개발 중이라고 폴링 간격을 줄이지 않는다.
 대상 서버 입장에서 개발용 요청과 프로덕션 요청은 구별되지 않는다.
 가능하면 저장된 `raw_payload` 픽스처로 파서를 개발한다 ([[data-collection-design]] §10.2와 동일 자산).
+
+**공식문서 URL은 각 에이전트 프롬프트(`.claude/agents/*.md`)의 「공식문서」 절에 있다.**
+여기에 복사하지 않는다 — 두 곳에 두면 어긋난다.
 
 ---
 
@@ -283,7 +360,7 @@ Cloud SQL은 `/cloudsql` **Unix 소켓 마운트**, 외부 Postgres는 **TCP + T
 | Firebase Auth | v0/v0.5에 로그인 없음 |
 | `zustand` | 서버 상태만 다룬다 |
 | Cloud Storage 이미지 캐싱 | 저작물. 링크아웃만 ([[plan]] §1.4) |
-| `@nestjs/swagger` | v0에 HTTP API 없음 |
+| `@nestjs/swagger` | 읽기 API의 소비자가 `fe/` 하나뿐이다. 스키마는 zod로 `fe/` 경계에서 검증한다 (§2.8) |
 | repo 분할 | 개인 규모에 오버헤드 (§2.5) |
 
 ---
