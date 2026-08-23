@@ -74,6 +74,9 @@
   .b-upcoming{background:color-mix(in srgb,var(--upcoming) 18%,transparent);color:var(--upcoming)}
   .b-ended{background:var(--chip);color:var(--ended)}
   .b-restock{background:color-mix(in srgb,#4a8ede 18%,transparent);color:#4a8ede}
+  .b-planned{background:color-mix(in srgb,#4a8ede 14%,transparent);color:#4a8ede;
+    border:1px solid color-mix(in srgb,#4a8ede 32%,transparent)}
+  .b-undecided{background:none;color:var(--muted);border:1px dashed var(--line)}
   .cfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;
     margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px}
   .src{color:var(--muted)}
@@ -121,6 +124,7 @@
   <div class="checks">
     <label><input type="checkbox" id="noRandom"> ランダム商品を除く</label>
     <label><input type="checkbox" id="onlineOnly"> オンラインで買えるものだけ</label>
+    <label><input type="checkbox" id="waitable"> 再入荷を待てるものだけ</label>
   </div>
 </div>
 
@@ -134,6 +138,11 @@
     <p class="snote">開始時刻はサイトに記載がないため<strong>推定</strong>です。日付のみ確定情報。</p>
     <div id="listUpcoming"></div>
   </section>
+  <section>
+    <div class="shead"><h2>🔵 再入荷を待てるもの</h2><span class="count" id="cPlanned"></span></div>
+    <p class="snote">品切れですが再入荷が告知されています。時期のみの告知はそのまま表示します。</p>
+    <div id="listPlanned"></div>
+  </section>
 </div>
 
 <div id="view-cal" class="hide"><div id="calendar"></div></div>
@@ -141,7 +150,8 @@
 <div id="view-past" class="hide">
   <section>
     <div class="shead"><h2>🗄 過去 / 完売</h2><span class="count" id="cEnded"></span></div>
-    <p class="snote">再入荷があれば「今すぐ買えるもの」に戻ります。再入荷は事前予告ができません。</p>
+    <p class="snote">再入荷の告知があるものは「🔵 再入荷を待てるもの」に移ります。
+    ここにあるのは告知がない、または販売終了が明示されたものです。</p>
     <div id="listEnded"></div>
   </section>
 </div>
@@ -204,8 +214,19 @@ const ITEMS = [
   {t:'もぐもぐ本舗 秋の和菓子アソート', price:1080, ch:'konbini', br:'mogumogu',
    st:'UPCOMING', acq:'fixed', region:'national', d:'2026-09-01', ev:'発売', src:'ローソン'},
 
+  // 品切れだが再入荷が告知されているもの（日付あり / 時期のみ / 未定）
+  {t:'ちいかわ ふわふわクッション', price:3850, ch:'online_official', br:'chiikawa_market',
+   st:'ENDED', acq:'fixed', region:'online', d:'2026-08-10',
+   plan:{kind:'restock', date:'2026-09-15'}, src:'ちいかわマーケット'},
+  {t:'ナガノマーケット トートバッグ', price:2200, ch:'online_official', br:'nagano_market',
+   st:'ENDED', acq:'fixed', region:'online', d:'2026-08-05',
+   plan:{kind:'restock', text:'9月下旬'}, src:'ナガノマーケット'},
+  {t:'もぐもぐ本舗 いちごサンド', price:398, ch:'konbini', br:'mogumogu',
+   st:'ENDED', acq:'fixed', region:'national', d:'2026-08-01',
+   plan:{kind:'restock', undecided:true}, src:'ローソン'},
+
   {t:'夏の新作 うちわ 5種', price:770, ch:'online_official', br:'chiikawa_market',
-   st:'ENDED', acq:'fixed', region:'online', d:'2026-07-18', src:'ちいかわマーケット'},
+   st:'ENDED', acq:'fixed', region:'online', d:'2026-07-18', final:true, src:'ちいかわマーケット'},
   {t:'一番くじ ちいかわ ～なつやすみ～', price:750, ch:'kuji', br:'ichiban_kuji',
    st:'ENDED', acq:'random', total:68, region:'national', d:'2026-07-05', src:'プレスリリース'},
   {t:'もぐもぐ本舗 冷やしぜんざい', price:430, ch:'konbini', br:'mogumogu',
@@ -213,19 +234,33 @@ const ITEMS = [
 ];
 
 const REGIONS = {online:'オンライン', national:'全国', tokyo:'東京', osaka:'大阪'};
-const state = {view:'home', ch:new Set(), br:new Set(), noRandom:false, onlineOnly:false};
+const state = {view:'home', ch:new Set(), br:new Set(), noRandom:false, onlineOnly:false, waitable:false};
 
 const days = (a,b)=>Math.round((new Date(a+'T00:00:00+09:00')-b)/864e5);
 const md = s=>{const d=new Date(s+'T00:00:00+09:00');return (d.getMonth()+1)+'/'+d.getDate();};
 const wk = s=>'日月火水木金土'[new Date(s+'T00:00:00+09:00').getDay()];
 const esc = s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+// バッジ = 状態 + 直近の予定
 function badge(it){
   if(it.st==='ON_SALE') return '<span class="badge b-onsale">販売中</span>';
   if(it.st==='RESTOCK') return '<span class="badge b-restock">📦 再入荷</span>';
-  if(it.st==='ENDED')   return '<span class="badge b-ended">完売 / 終了</span>';
-  const d=days(it.d,TODAY);
-  return '<span class="badge b-upcoming">'+(d<=0?'本日':'D-'+d)+'</span>';
+  if(it.st==='UPCOMING'){
+    const d=days(it.d,TODAY);
+    return '<span class="badge b-upcoming">'+(d<=0?'本日':'D-'+d)+'</span>';
+  }
+  // ENDED — 予定の有無で3通りに分かれる
+  const p=it.plan;
+  if(p && p.kind==='restock'){
+    if(p.undecided) return '<span class="badge b-undecided">再入荷未定</span>';
+    if(p.date){
+      const d=days(p.date,TODAY);
+      return '<span class="badge b-planned">🔵 再入荷 '+md(p.date)+(d>0?' ・ D-'+d:'')+'</span>';
+    }
+    // 「9月下旬」のように幅のある表記は、そのまま出す。日付に丸めない
+    return '<span class="badge b-planned">🔵 再入荷 '+esc(p.text)+'</span>';
+  }
+  return '<span class="badge b-ended">'+(it.final?'販売終了':'完売')+'</span>';
 }
 
 function card(it){
@@ -241,6 +276,10 @@ function card(it){
     meta.push(md(it.d)+(it.time?' <span class="est" title="サイトに記載がないため実測ベースの推定です">'+it.time+'頃</span>':'')+(it.ev?' '+it.ev:''));
   }
   if(it.until) meta.push('～'+md(it.until));
+  if(it.st==='ENDED'&&it.plan&&it.plan.kind==='restock'){
+    meta.push(it.plan.undecided ? '再入荷は未告知'
+      : '再入荷予定 '+(it.plan.date?md(it.plan.date):esc(it.plan.text)));
+  }
   return '<article class="card'+(it.st==='ENDED'?' ended':'')+'">'
     + '<div class="ctop"><span class="bchip'+(bk==='unknown'?' unknown':'')+'">'+esc(BRANDS[bk])+'</span>'
     + badge(it)+'</div>'
@@ -257,6 +296,7 @@ function pass(it){
   if(state.br.size && !state.br.has(it.br||'unknown')) return false;
   if(state.noRandom && it.acq==='random') return false;
   if(state.onlineOnly && !(it.ch==='online_official'||it.region==='online')) return false;
+  if(state.waitable && !(it.plan&&it.plan.kind==='restock'&&!it.plan.undecided)) return false;
   return true;
 }
 
@@ -264,13 +304,17 @@ function render(){
   const f=ITEMS.filter(pass);
   const onsale=f.filter(i=>i.st==='ON_SALE'||i.st==='RESTOCK');
   const up=f.filter(i=>i.st==='UPCOMING').sort((a,b)=>a.d<b.d?-1:1);
-  const ended=f.filter(i=>i.st==='ENDED').sort((a,b)=>a.d<b.d?1:-1);
+  const isPlanned=i=>i.st==='ENDED'&&i.plan&&i.plan.kind==='restock'&&!i.plan.undecided;
+  const planned=f.filter(isPlanned).sort((a,b)=>(a.plan.date||'9999')<(b.plan.date||'9999')?-1:1);
+  const ended=f.filter(i=>i.st==='ENDED'&&!isPlanned(i)).sort((a,b)=>a.d<b.d?1:-1);
 
   const put=(id,arr,msg)=>document.getElementById(id).innerHTML =
     arr.length?arr.map(card).join(''):'<div class="empty">'+msg+'</div>';
   put('listOnsale',onsale,'条件に合う商品がありません');
   put('listUpcoming',up,'予定されている発表はありません');
+  put('listPlanned',planned,'再入荷予定の告知はありません');
   put('listEnded',ended,'該当なし');
+  document.getElementById('cPlanned').textContent='('+planned.length+')';
   document.getElementById('cOnsale').textContent='('+onsale.length+')';
   document.getElementById('cUpcoming').textContent='('+up.length+')';
   document.getElementById('cEnded').textContent='('+ended.length+')';
@@ -281,6 +325,9 @@ function render(){
     if(i.st==='UPCOMING') evs.push({d:i.d,label:i.ev||'発売',it:i});
     else if(i.st==='RESTOCK') evs.push({d:i.d,label:'再入荷',it:i});
     else evs.push({d:i.d,label:i.st==='ENDED'?'発売（終了）':'発売',it:i});
+    // 日付が確定した再入荷予定のみカレンダーに置く。「9月下旬」は置けない
+    if(i.plan&&i.plan.kind==='restock'&&i.plan.date)
+      evs.push({d:i.plan.date,label:'再入荷予定',it:i,planned:true});
   });
   evs.sort((a,b)=>a.d<b.d?-1:1);
   const byDay={}; evs.forEach(e=>(byDay[e.d]=byDay[e.d]||[]).push(e));
@@ -324,6 +371,7 @@ chips(document.getElementById('chFilter'),CHANNELS,'ch');
 chips(document.getElementById('brFilter'),BRANDS,'br','brand');
 noRandom.onchange=e=>{state.noRandom=e.target.checked;render();};
 onlineOnly.onchange=e=>{state.onlineOnly=e.target.checked;render();};
+waitable.onchange=e=>{state.waitable=e.target.checked;render();};
 
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
