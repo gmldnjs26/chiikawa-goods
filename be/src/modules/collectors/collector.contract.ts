@@ -1,5 +1,5 @@
-import type { Relevance } from '../../modules/mentions/entities/mention.entity';
-import type { SourceConfig } from '../../modules/sources/source-config.schema';
+import type { Relevance } from '@/modules/mentions/entities/mention.entity';
+import type { SourceConfig } from '@/modules/sources/source-config.schema';
 
 /**
  * 어댑터 계약 (docs/data-collection-design.md §4). 소스 추가 비용 = 파일 1개.

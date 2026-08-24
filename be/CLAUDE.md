@@ -49,7 +49,7 @@ be/src/
 │       ├── entities/*.entity.ts
 │       ├── *.service.ts
 │       └── <도메인>.module.ts
-└── batch/<잡>/             nest-commander 배치 잡. 어댑터가 여기 산다
+└── batch/<잡>/             nest-commander 배치 잡. 락 · 실행 기록 · 게이트 · 순회
 ```
 
 - **엔티티는 도메인 모듈 안에 둔다.** `database/entities/` 같은 **레이어 분할을 하지 않는다**
@@ -64,9 +64,24 @@ be/src/
 batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
 ```
 
-- **도메인끼리 서로 import하지 않는다.** 엔티티 참조(FK)는 예외 — 상대경로로 직접 가리킨다
+- **도메인끼리 서로 import하지 않는다.** 엔티티 참조(FK)는 예외 — `@/`로 직접 가리킨다
 - `modules/`는 `batch/`를 모른다. 수집 잡이 도메인을 쓰는 방향만 있다
+- **어댑터는 도메인이다.** `modules/collectors/`에 산다 — `batch/`가 아니다.
+  경계는 **"무엇을 긁는가"(도메인) vs "언제·어떻게 돌리는가"(잡)**다.
+  `pg_advisory_lock` · `collection_run` 기록 · `skipped_idle` 게이트 · 소스 단위 실패 격리는
+  전부 잡 쪽이고, 어댑터는 그걸 모른다. 수집이 이 제품의 본체이므로 `batch/`에 두면
+  레이어가 뒤집힌다 — 1회성 임포트 잡과 다르다
 - **`_common/`은 특정 도메인을 모른다**
+
+### import 경로
+
+- **디렉토리를 넘어가면 `@/`를 쓴다.** `../../`로 올라가지 않는다
+- **같은 디렉토리는 `./`를 쓴다.** `@/`로 우회하지 않는다
+- 별칭은 `tsconfig.json`의 `"@/*": ["src/*"]` 하나뿐이다. 늘리지 않는다
+
+`tsc`는 출력 JS의 import 문자열을 다시 쓰지 않는다. 그래서 진입점마다 해석기가 따로 붙어 있다 —
+`build`는 `tsc-alias`, `cli`·`migration:*`은 `-r tsconfig-paths/register`, `test`는 jest `moduleNameMapper`.
+**새 진입점을 추가하면 그 진입점에도 해석기를 붙인다.** 안 붙이면 런타임에만 깨진다
 
 ## 3. 스키마는 migration만이 바꾼다
 
@@ -146,6 +161,4 @@ cat be/node_modules/typeorm/decorator/columns/PrimaryGeneratedColumn.d.ts
 
 ## 7. 미결정
 
-| 항목 | 선택지 |
-| --- | --- |
-| `@/` 경로 별칭 | `tsconfig.json`에 `"@/*": ["src/*"]`가 있지만 **사용처가 0개**다. `tsc`는 출력 JS의 import 문자열을 다시 쓰지 않으므로, `@/`를 쓰기 시작하면 `npm start`(`node dist/main`)가 깨진다. ① 안 쓴다 — `paths`와 `tsconfig-paths`를 지운다 ② 쓴다 — `start`에 `-r tsconfig-paths/register`를 붙이거나 빌드 후 `tsc-alias`를 돌린다. **정하기 전까지 상대경로만 쓴다** |
+현재 없음.

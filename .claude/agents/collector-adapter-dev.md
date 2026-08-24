@@ -40,10 +40,13 @@ be/src/
 │   │   ├── source-config.schema.ts  zod. 규칙이 null이면 판정을 건너뛴다
 │   │   ├── source-registry.service.ts  로드 시점에 config 전부 파싱
 │   │   └── sources.module.ts
+│   ├── collectors/
+│   │   ├── collector.contract.ts    어댑터 계약
+│   │   └── adapters/                어댑터 구현. 플랫폼 1개 = 파일 1개
 │   ├── brands/entities/brand.entity.ts
 │   ├── mentions/entities/mention.entity.ts
 │   └── collection-runs/entities/collection-run.entity.ts
-└── batch/collect/collector.contract.ts   어댑터 계약. 어댑터는 여기 아래
+└── batch/collect/                   수집 잡. 락 · 실행 기록 · 게이트 · 순회
 ```
 
 **디렉토리 규약** (`tomomachi-be`와 동일)
@@ -53,7 +56,8 @@ be/src/
 | `src/modules/<도메인>/entities/*.entity.ts` | 엔티티. **도메인별로 넣는다.** `src/database/entities/` 같은 레이어 분할을 하지 않는다 |
 | `src/modules/<도메인>/` | 그 도메인의 service · dto · module |
 | `src/modules/_common/` | 도메인이 없는 공유물 |
-| `src/batch/<잡>/` | `nest-commander` 배치 잡. 어댑터가 여기 산다 |
+| `src/modules/collectors/` | **어댑터.** 무엇을 긁는가 |
+| `src/batch/<잡>/` | `nest-commander` 배치 잡. 언제·어떻게 돌리는가 — 락 · 실행 기록 · 게이트 · 실패 격리 |
 | `src/migrations/` | migration. 평면 |
 
 디렉토리명은 복수, 테이블명은 단수다 (`modules/sources/` ↔ `source`).
