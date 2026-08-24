@@ -27,15 +27,38 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 ## 현재 있는 것
 
 ```
-be/
-├── src/main.ts                     CommandFactory. HTTP 서버를 띄우지 않는다
-├── src/app.module.ts               ConfigModule + TypeOrmModule
-├── src/commands/health.command.ts  부팅 확인. 외부 요청 0건
-└── src/config/database.config.ts   소켓/TCP 양쪽 (tech-stack.md §2.6)
+be/src/
+├── main.ts                          CommandFactory. HTTP 서버를 띄우지 않는다
+├── app.module.ts                    ConfigModule + TypeOrmModule + 도메인 모듈
+├── commands/health.command.ts       부팅 확인. 외부 요청 0건
+├── config/database.config.ts        소켓/TCP 양쪽 (tech-stack.md §2.6)
+├── migrations/                      migration 파일. 전부 여기 평면으로
+├── modules/
+│   ├── _common/enum-check.ts        CHECK 식을 상수 배열에서 만든다
+│   ├── sources/
+│   │   ├── entities/source.entity.ts
+│   │   ├── source-config.schema.ts  zod. 규칙이 null이면 판정을 건너뛴다
+│   │   ├── source-registry.service.ts  로드 시점에 config 전부 파싱
+│   │   └── sources.module.ts
+│   ├── brands/entities/brand.entity.ts
+│   ├── mentions/entities/mention.entity.ts
+│   └── collection-runs/entities/collection-run.entity.ts
+└── batch/collect/collector.contract.ts   어댑터 계약. 어댑터는 여기 아래
 ```
 
-새 커맨드는 `src/commands/`에, provider로 `app.module.ts`에 등록한다.
-`npm run cli <커맨드>`로 로컬 실행된다.
+**디렉토리 규약** (`tomomachi-be`와 동일)
+
+| 위치 | 무엇이 들어가는가 |
+| --- | --- |
+| `src/modules/<도메인>/entities/*.entity.ts` | 엔티티. **도메인별로 넣는다.** `src/database/entities/` 같은 레이어 분할을 하지 않는다 |
+| `src/modules/<도메인>/` | 그 도메인의 service · dto · module |
+| `src/modules/_common/` | 도메인이 없는 공유물 |
+| `src/batch/<잡>/` | `nest-commander` 배치 잡. 어댑터가 여기 산다 |
+| `src/migrations/` | migration. 평면 |
+
+디렉토리명은 복수, 테이블명은 단수다 (`modules/sources/` ↔ `source`).
+새 커맨드는 `src/commands/`(진단용) 또는 `src/batch/<잡>/`(수집 잡)에 두고
+`app.module.ts`에 등록한다. `npm run cli <커맨드>`로 로컬 실행된다.
 
 ## 구조
 
@@ -88,15 +111,8 @@ Collector → Validator → Normalizer → Deduper → Store
 
 ## 공식문서
 
-**API 형태를 기억으로 쓰지 않는다.** 이 스택은 버전이 빠르게 움직인다.
-코드를 쓰기 전에 확인하고, 확인한 근거를 커밋 메시지나 코드 주석에 남긴다.
-
-**1순위 — context7 MCP.** `resolve-library-id` → `query-docs`.
-학습 데이터보다 새 문서가 나온다. 라이브러리 API를 쓰는 코드는 이걸 먼저 거친다.
-**2순위 — 아래 URL.** context7에 없거나 결과가 비면 여기를 본다.
-
-**버전 숫자는 `be/package.json`이 진실이다.** 이 표에도, 문서에도 적지 않는다.
-버전 상한이 왜 최신이 아닌지는 `docs/tech-stack.md` §1.4에 있다.
+**확인 순서는 `be/CLAUDE.md` §5에 있다** — 설치된 `.d.ts` → context7 MCP → 아래 URL.
+여기에 다시 적지 않는다. **아래 표는 그 3순위다.**
 
 | 대상 | URL |
 | --- | --- |

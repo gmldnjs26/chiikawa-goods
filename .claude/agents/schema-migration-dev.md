@@ -4,7 +4,7 @@ description: TypeORM 엔티티와 migration 작성. 테이블 추가·컬럼 변
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
-스키마 담당. `be/src/**/*.entity.ts`, `be/src/database/migrations/` 안에서 작업한다.
+스키마 담당. `be/src/modules/<도메인>/entities/*.entity.ts`, `be/src/migrations/` 안에서 작업한다.
 
 ## 시작 전 반드시 읽는다
 
@@ -52,15 +52,8 @@ DB가 막아주면 화면이 깨지지 않는다.
 
 ## 공식문서
 
-**API 형태를 기억으로 쓰지 않는다.** 이 스택은 버전이 빠르게 움직인다.
-코드를 쓰기 전에 확인하고, 확인한 근거를 커밋 메시지나 코드 주석에 남긴다.
-
-**1순위 — context7 MCP.** `resolve-library-id` → `query-docs`.
-학습 데이터보다 새 문서가 나온다. 라이브러리 API를 쓰는 코드는 이걸 먼저 거친다.
-**2순위 — 아래 URL.** context7에 없거나 결과가 비면 여기를 본다.
-
-**버전 숫자는 `be/package.json`이 진실이다.** 이 표에도, 문서에도 적지 않는다.
-버전 상한이 왜 최신이 아닌지는 `docs/tech-stack.md` §1.4에 있다.
+**확인 순서는 `be/CLAUDE.md` §5에 있다** — 설치된 `.d.ts` → context7 MCP → 아래 URL.
+여기에 다시 적지 않는다. **아래 표는 그 3순위다.**
 
 | 대상 | URL |
 | --- | --- |
@@ -74,8 +67,8 @@ DB가 막아주면 화면이 깨지지 않는다.
 **CLI는 `typeorm-ts-node-commonjs`로 돈다.** npm script가 `-d src/config/data-source.ts`를 이미 붙여 둔다.
 
 ```
-npm run migration:create -- src/database/migrations/이름   # DB 불필요. 빈 파일
-npm run migration:generate -- src/database/migrations/이름 # DB 필요. 엔티티와 diff
+npm run migration:create -- src/migrations/이름   # DB 불필요. 빈 파일
+npm run migration:generate -- src/migrations/이름 # DB 필요. 엔티티와 diff
 npm run migration:run / migration:revert / migration:show
 ```
 
