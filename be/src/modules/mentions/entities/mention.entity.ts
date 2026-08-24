@@ -9,9 +9,9 @@ import {
   Unique,
 } from 'typeorm';
 
-import { inList } from '../../_common/enum-check';
-import { CollectionRun } from '../../collection-runs/entities/collection-run.entity';
-import { Source } from '../../sources/entities/source.entity';
+import { inList } from '@/modules/_common/enum-check';
+import { CollectionRun } from '@/modules/collection-runs/entities/collection-run.entity';
+import { Source } from '@/modules/sources/entities/source.entity';
 
 /** docs/db-schema.md §4. 판정 규칙은 docs/source-mapping.md §7 */
 export const RELEVANCES = ['included', 'mixed', 'excluded'] as const;

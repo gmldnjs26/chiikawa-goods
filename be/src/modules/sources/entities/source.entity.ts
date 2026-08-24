@@ -7,7 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { inList } from '../../_common/enum-check';
+import { inList } from '@/modules/_common/enum-check';
 
 /** docs/db-schema.md §2. 값을 늘리면 CHECK migration이 필요하다 */
 export const SOURCE_KINDS = [

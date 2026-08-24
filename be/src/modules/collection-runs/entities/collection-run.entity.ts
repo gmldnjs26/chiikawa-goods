@@ -8,8 +8,8 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { inList, inListOrNull } from '../../_common/enum-check';
-import { Source } from '../../sources/entities/source.entity';
+import { inList, inListOrNull } from '@/modules/_common/enum-check';
+import { Source } from '@/modules/sources/entities/source.entity';
 
 /** docs/db-schema.md §3. 스킵 2종은 docs/data-collection-design.md §6.1–6.2 */
 export const RUN_STATUSES = [

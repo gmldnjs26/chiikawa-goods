@@ -11,17 +11,17 @@
     "node": "24.19.0"
   },
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && tsc-alias -p tsconfig.build.json",
     "start": "node dist/main",
     "cli": "ts-node -r tsconfig-paths/register src/main.ts",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest",
-    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
-    "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/data-source.ts",
-    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/config/data-source.ts",
+    "migration:generate": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/config/data-source.ts",
+    "migration:create": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
+    "migration:run": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/config/data-source.ts",
+    "migration:revert": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/config/data-source.ts",
+    "migration:show": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d src/config/data-source.ts",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down"
   },
@@ -57,6 +57,7 @@
     "prettier": "^3.9.6",
     "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.67.0"
