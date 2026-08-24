@@ -36,7 +36,7 @@ export function buildDataSourceOptions(
     migrationsRun: false,
 
     entities: [`${__dirname}/../**/*.entity.{ts,js}`],
-    migrations: [`${__dirname}/../database/migrations/*.{ts,js}`],
+    migrations: [`${__dirname}/../migrations/*.{ts,js}`],
     migrationsTableName: 'migration',
 
     namingStrategy: new SnakeNamingStrategy(),

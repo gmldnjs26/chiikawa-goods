@@ -40,7 +40,8 @@
     "rxjs": "^7.8.2",
     "typeorm": "^1.1.0",
     "typeorm-naming-strategy": "^3.0.0",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
