@@ -4,8 +4,8 @@
 | --- | --- |
 | 문서 상태 | **초안 (draft)** |
 | 버전 | v0.1 |
-| DB | PostgreSQL 16 / TypeORM 0.3 (migration-driven, `synchronize: false`) |
-| 명명 | `typeorm-naming-strategies` snake_case. 테이블명 단수 |
+| DB | PostgreSQL 18 / TypeORM 1 (migration-driven, `synchronize: false`) — 버전 숫자는 `be/package.json` |
+| 명명 | `typeorm-naming-strategy` snake_case. 테이블명 단수 |
 | 상위 문서 | [[data-collection-design]] (데이터 층 정의) / [[tech-stack]] (§2.4) |
 | 관련 문서 | [[source-mapping]] (소스 원문 → 테이블 필드 매핑) |
 | 범위 | 스키마와 그 근거. DDL은 설계 표현용이며 실제 반영은 migration으로 한다 |
@@ -114,6 +114,10 @@ CREATE INDEX ON collection_run (source_id, started_at DESC);
 > [!important] `source.last_success_at` 컬럼을 두지 않는다
 > 실행 이력에서 파생되는 값이다. 컬럼으로 중복해서 들고 있으면 반드시 어긋난다.
 > 헬스 판정은 `collection_run` 조회로 한다.
+
+> [!note] 실제 인덱스는 방향 없이 `(source_id, started_at)`이다
+> btree는 역방향 스캔이 가능하므로 `ORDER BY started_at DESC`에 그대로 쓰인다.
+> 위 DDL의 `DESC`는 의도를 적은 것이고, migration은 방향을 생략한다.
 
 `status`에 스킵 2종이 있다 ([[data-collection-design]] §6.1–6.2).
 
@@ -499,6 +503,7 @@ SELECT item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
 | 2 | `brand` 초기 목록과 `match_rules` 값 | 태그 기반으로 판정 가능함은 확인됨. 목록 자체는 미확정 |
 | 3 | 편의점·프라이즈 소스의 세금 표기 | 공식 스토어는 `税込` 확정. 다른 소스는 미확인 |
 | 4 | `category`(product_type) 값 정규화 여부 | 원문 그대로 둘지, 소수 카테고리로 매핑할지 |
+| 5 | 캐릭터 룩업 테이블 (`character`) | [[source-mapping]] §6의 `label_tag_source: "character_table"`이 참조하는데 §13 마이그레이션 순서에 없다. 라벨 판정(에픽 C)에서 필요해진다 — 그때 순서 몇 번에 넣을지 미정 |
 
 **해소됨** — `region`(도시 단위) · `drop_group` 묶음 기준(§6) · `sale_final`(제거) ·
 공식 스토어 `price_tax_included`(true 고정).
