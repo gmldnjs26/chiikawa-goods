@@ -111,7 +111,7 @@ export class SeedNaganoAndMogumogu1787654500000 implements MigrationInterface {
           "base_url", "channel", "interval_sec", "crawl_delay_sec", "silence_alert_sec",
           "enabled", "disabled_reason")
        VALUES ($1, $2, 'official_store', 'shopify', 'json', $3::jsonb,
-               $4, 'online_official', 1800, 3, $5, false, $6)`,
+               $4, 'online_official', 3600, 3, $5, false, $6)`,
       [
         source.code,
         source.name,

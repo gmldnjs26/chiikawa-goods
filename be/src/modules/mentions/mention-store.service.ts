@@ -16,7 +16,7 @@ export interface StoreResult {
 /**
  * `mention` 저장 (docs/data-collection-design.md §10.1).
  *
- * **내용 해시가 같으면 저장하지 않는다.** 30분 폴링은 대부분 무변경이라
+ * **내용 해시가 같으면 저장하지 않는다.** 1시간 폴링은 대부분 무변경이라
  * 이것 하나로 증가량이 크게 준다. `disk_autoresize`는 한 번 늘면 줄지 않으므로
  * 이 판정 없이 도는 실행이 하루라도 있으면 안 된다 (docs/tech-stack.md §4.2).
  */

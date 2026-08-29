@@ -48,7 +48,7 @@ export class SeedChiikawamarket1787654400000 implements MigrationInterface {
         'ちいかわマーケット',
         JSON.stringify(this.config),
         'https://chiikawamarket.jp',
-        1800, // 30분
+        3600, // 1시간. 30분에서 내렸다 — docs/data-collection-design.md §6
         3, // robots.txt에 Crawl-delay가 없다. 우리가 정한 값이다
         60 * 60 * 24 * 3, // 3일 조용하면 이상하다
         '이용규약 판단 대기 — docs/source-mapping.md §6.2',
