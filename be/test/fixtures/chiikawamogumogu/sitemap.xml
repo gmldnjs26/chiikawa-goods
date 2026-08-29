@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- This is the parent sitemap linking to additional sitemaps for products, collections and pages as shown below. The sitemap can not be edited manually, but is kept up to date in real time. -->
+  <sitemap>
+    <loc>https://chiikawamogumogu.shop/sitemap_agentic_discovery.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://chiikawamogumogu.shop/sitemap_products_1.xml?from=8821651996993&amp;to=10327930732865</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://chiikawamogumogu.shop/sitemap_pages_1.xml?from=129065320769&amp;to=177484104001</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://chiikawamogumogu.shop/sitemap_collections_1.xml?from=474185662785&amp;to=658000019777</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://chiikawamogumogu.shop/sitemap_blogs_1.xml</loc>
+  </sitemap>
+</sitemapindex>

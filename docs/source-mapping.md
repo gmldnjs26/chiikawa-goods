@@ -31,6 +31,23 @@
 > `from`/`to` 값은 스토어마다 다르고 변한다.
 > **반드시 `/sitemap.xml` 인덱스를 먼저 읽고 그 안의 URL을 그대로 쓴다.**
 
+> [!warning] sitemap 인덱스에 **로케일 변종**이 섞여 있다 (실측 2026-08-29)
+> `chiikawamarket.jp/sitemap.xml`의 자식이 **66개**인데, 그중 상당수가
+> `/ko/sitemap_collections_1.xml` `/zh-hans/...` `/zh-hant/...`처럼 언어별 사본이다.
+> 문자열에 `sitemap_collections`가 들어간 것을 전부 쓰면 **같은 상품을 언어 수만큼 본다.**
+> → 경로가 `/sitemap_collections`로 **바로 시작하는 것만** 쓴다 (로케일 접두어 없음).
+> 자식 수: `chiikawamarket.jp` 66 / `nagano-market.jp` 31 / `chiikawamogumogu.shop` 5.
+
+> [!warning] `products.json`은 **250건이 한 페이지 상한**이다 (실측 2026-08-29)
+> `?limit=250`으로 요청해도 250건이 오면 그건 "끝"이 아니라 **"다음 페이지가 있다"**이다.
+> `?page=2`로 이어 받고, `products`가 **빈 배열이면 종료**한다 (`page=99` → 0건 확인).
+> 250건에서 멈추면 200 + 정상 JSON이라 §7 본문 검증도 통과한다 —
+> **조용한 누락이라 가장 위험하다.**
+
+> [!note] 3곳 모두 `robots.txt`에 `Crawl-delay`가 없다 (실측 2026-08-29)
+> 없다고 빨리 때려도 된다는 뜻이 아니다. 우리 하한(1초)과 `source.crawl_delay_sec`의
+> max를 쓴다. 채집 시 실사용값은 3초였다.
+
 | mention 컬럼 | 원문 | 비고 |
 | --- | --- | --- |
 | `external_id` | `product.id` (숫자) | **`handle`이 아니다.** handle은 변경될 수 있다 |
