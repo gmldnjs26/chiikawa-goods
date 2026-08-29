@@ -40,6 +40,12 @@ const pollCollections = z.object({
 });
 
 export const sourceConfigSchema = z.object({
+  /**
+   * 해시 입력에서 뺄 키 이름. 깊이 무관하다 (docs/source-mapping.md §1).
+   * Shopify `updated_at`은 요청마다 바뀐다 — 빼지 않으면 폴링마다 전건이 새 행이다
+   */
+  hash_exclude: z.array(z.string()).default(['updated_at']),
+
   poll_collections: pollCollections.default(() => pollCollections.parse({})),
 
   release_tag: regexRule.default(null),

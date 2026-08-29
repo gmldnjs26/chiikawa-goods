@@ -10,9 +10,10 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { XMLParser } from 'fast-xml-parser';
-
-import { assertXmlBody } from '@/modules/http/body-validation';
+import {
+  extractCollectionHandles,
+  pickCollectionSitemaps,
+} from '@/modules/collectors/adapters/shopify/sitemap';
 import { HttpFetcherService } from '@/modules/http/http-fetcher.service';
 import { RobotsService } from '@/modules/http/robots.service';
 
@@ -51,31 +52,20 @@ async function main(): Promise<void> {
   const delay = await robots.crawlDelaySec(new URL(baseUrl));
   console.log(`robots Crawl-delay = ${delay ?? '없음'} (실제 사용값 ${Math.max(delay ?? 0, CRAWL_DELAY_SEC)}초)`);
 
-  const parser = new XMLParser({ ignoreAttributes: false });
   const options = { crawlDelaySec: CRAWL_DELAY_SEC };
 
   const index = await fetcher.fetchText(`${baseUrl}/sitemap.xml`, options);
   save(outDir, 'sitemap.xml', index.body);
-  assertXmlBody(index.url, index.body);
 
-  const children: string[] = toArray(parser.parse(index.body)?.sitemapindex?.sitemap).map(
-    (entry: { loc: string }) => entry.loc,
-  );
-  console.log(`자식 sitemap ${children.length}개`);
-  children.forEach((url) => console.log(`  ${url}`));
-
-  // 하드코딩하지 않는다. 인덱스가 준 URL을 그대로 쓴다 (쿼리 파라미터가 붙어 있다)
-  const collectionsUrl = children.find((url) => url.includes('sitemap_collections'));
+  // 어댑터와 같은 코드로 고른다 — 채집과 수집이 다른 경로를 타면 픽스처가 거짓말을 한다
+  const [collectionsUrl] = pickCollectionSitemaps(index.url, index.body);
   if (!collectionsUrl) throw new Error('컬렉션 sitemap을 찾지 못했다');
+  console.log(`컬렉션 sitemap: ${collectionsUrl}`);
 
   const collections = await fetcher.fetchText(collectionsUrl, options);
   save(outDir, 'sitemap_collections.xml', collections.body);
-  assertXmlBody(collections.url, collections.body);
 
-  const handles: string[] = toArray(parser.parse(collections.body)?.urlset?.url)
-    .map((entry: { loc: string }) => entry.loc)
-    .filter((loc: string) => loc.includes('/collections/'))
-    .map((loc: string) => new URL(loc).pathname.split('/collections/')[1]);
+  const handles = extractCollectionHandles(collections.url, collections.body);
 
   console.log(`컬렉션 ${handles.length}개. 앞 ${COLLECTION_SAMPLE}개만 받는다`);
 
@@ -105,11 +95,6 @@ function redact(payload: { products: Record<string, unknown>[] }): unknown {
 
 function pick(source: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
   return Object.fromEntries(keys.filter((key) => key in source).map((key) => [key, source[key]]));
-}
-
-function toArray<T>(value: T | T[] | undefined): T[] {
-  if (value === undefined) return [];
-  return Array.isArray(value) ? value : [value];
 }
 
 function save(dir: string, name: string, body: string): void {
