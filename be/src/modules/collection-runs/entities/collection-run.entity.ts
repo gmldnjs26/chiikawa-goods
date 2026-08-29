@@ -20,6 +20,8 @@ export const RUN_STATUSES = [
   'skipped_locked',
   /** 창구 폴링인데 오늘 예정이 없어 외부 요청 없이 종료 */
   'skipped_idle',
+  /** 마지막 성공에서 `interval_sec`이 안 지나 종료. 자주 나오면 스케줄러가 과발화한다 */
+  'skipped_interval',
 ] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 

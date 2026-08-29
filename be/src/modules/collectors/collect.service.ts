@@ -60,7 +60,7 @@ export class CollectService {
     // 스케줄러가 1분마다 때리면 1분마다 수집한다. 주기는 여기서 지킨다
     if (this.isTooSoon(lastSuccess, row.intervalSec)) {
       await this.runs.save(
-        this.runs.create({ sourceId: row.id, status: 'skipped_idle', finishedAt: new Date() }),
+        this.runs.create({ sourceId: row.id, status: 'skipped_interval', finishedAt: new Date() }),
       );
       this.logger.log(`${row.code}: ${row.intervalSec}초가 안 지났다. 요청 없이 끝낸다`);
       return;

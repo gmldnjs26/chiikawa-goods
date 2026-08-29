@@ -30,20 +30,30 @@ export function selectCollections(handles: string[], config: SourceConfig, now: 
   return { handles: selected.slice(0, cap), dropped: Math.max(0, selected.length - cap) };
 }
 
-/** 앞뒤 양쪽을 본다 — 예약 컬렉션은 **미래 날짜**다. 미래를 자르면 예약 감지가 죽는다 */
+/**
+ * 앞뒤 양쪽을 본다 — 예약 컬렉션은 **미래 날짜**다. 미래를 자르면 예약 감지가 죽는다.
+ *
+ * **오늘에 가까운 순으로 정렬해서 돌려준다.** 두 가지 이유다 —
+ * ① 상한에 걸릴 때 잘려 나가야 하는 건 창의 바깥쪽이지 sitemap이 마지막에 적은 것이 아니다
+ * ② sitemap 순서는 보장되지 않는다. 그 순서로 자르면 실행마다 **다른 컬렉션이 살아남고**,
+ *    같은 상품의 `_collections`가 달라져 `payload_hash`가 흔들린다.
+ *    내용이 안 바뀌었는데 행이 쌓인다 — `updated_at`과 같은 실패가 다른 문으로 들어온다
+ */
 function matchDated(handles: string[], pattern: string, recentDays: number, now: Date): string[] {
   const regex = new RegExp(pattern);
   const windowMs = recentDays * DAY_MS;
 
-  return handles.filter((handle) => {
-    const captured = regex.exec(handle)?.[1];
-    if (captured === undefined) return false;
-
-    const date = parseYyyymmdd(captured);
-    if (date === null) return false;
-
-    return Math.abs(date.getTime() - now.getTime()) <= windowMs;
-  });
+  return handles
+    .map((handle) => {
+      const captured = regex.exec(handle)?.[1];
+      const date = captured === undefined ? null : parseYyyymmdd(captured);
+      return date === null ? null : { handle, distance: Math.abs(date.getTime() - now.getTime()) };
+    })
+    .filter((entry): entry is { handle: string; distance: number } => entry !== null)
+    .filter((entry) => entry.distance <= windowMs)
+    // 거리가 같으면 핸들로 가른다. 정렬이 안정적이어야 결과가 결정적이다
+    .sort((a, b) => a.distance - b.distance || a.handle.localeCompare(b.handle))
+    .map((entry) => entry.handle);
 }
 
 /** 판정 못 하면 `null`이다. 추측해서 채우지 않는다 */

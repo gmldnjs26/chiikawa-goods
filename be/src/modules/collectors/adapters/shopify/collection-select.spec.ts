@@ -73,3 +73,31 @@ describe('selectCollections — 요청 예산', () => {
     expect(result.dropped).toBe(0);
   });
 });
+
+describe('selectCollections — 결정성', () => {
+  const dated = Array.from({ length: 20 }, (_, i) => `202608${String(i + 10).padStart(2, '0')}`);
+  const capped = sourceConfigSchema.parse({
+    poll_collections: {
+      always: ['newitems'],
+      date_pattern: '^(\\d{8})',
+      recent_days: 30,
+      max_collections: 6,
+    },
+  });
+
+  it('sitemap 순서가 달라도 같은 컬렉션이 살아남는다', () => {
+    const forward = selectCollections(['newitems', ...dated], capped, NOW);
+    const reversed = selectCollections([...dated].reverse().concat('newitems'), capped, NOW);
+
+    // 순서가 아니라 **집합**이 흔들리면 payload_hash가 흔들린다
+    expect(reversed.handles).toEqual(forward.handles);
+    expect(forward.handles).toHaveLength(6);
+  });
+
+  it('상한에 걸리면 창의 바깥쪽부터 버린다', () => {
+    const { handles } = selectCollections(dated, capped, NOW);
+    // NOW = 2026-08-29. 가까운 날짜가 남는다
+    expect(handles).toContain('20260829');
+    expect(handles).not.toContain('20260810');
+  });
+});
