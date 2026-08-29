@@ -27,7 +27,21 @@ const relevanceFilter = z.object({
   mixed_marker_tags: z.array(z.string()).default([]),
 });
 
+/**
+ * 어느 컬렉션을 도는가 (docs/source-mapping.md §6.0).
+ * 1006개를 매번 돌 수 없고, 핸들을 코드에 박으면 날짜 컬렉션마다 배포해야 한다.
+ */
+const pollCollections = z.object({
+  always: z.array(z.string()).default([]),
+  /** 첫 캡처가 `YYYYMMDD`여야 한다. 없으면 날짜 컬렉션을 돌지 않는다 */
+  date_pattern: z.string().nullable().default(null),
+  /** 오늘 기준 **앞뒤** 일수. 미래를 자르면 예약 사전 감지가 죽는다 */
+  recent_days: z.number().int().positive().default(14),
+});
+
 export const sourceConfigSchema = z.object({
+  poll_collections: pollCollections.default(() => pollCollections.parse({})),
+
   release_tag: regexRule.default(null),
   preorder_tag: regexRule.default(null),
   restock_tag: regexRule.default(null),
