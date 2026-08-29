@@ -39,6 +39,8 @@
 | DB 드라이버 | `pg` | 표준 Postgres |
 | snake_case | `typeorm-naming-strategy` | `tomomachi`의 `typeorm-naming-strategies`(복수형)는 TypeORM 1을 못 받는다 → §1.5 |
 | 검증 | `class-validator` + `class-transformer` | `tomomachi` 동일 |
+| `robots.txt` 해석 | `robots-parser` | **직접 짜지 않는다.** 경로 매칭을 틀리면 금지 경로를 때리고 소스를 영구히 잃는다 → §5 |
+| XML 파싱 | `fast-xml-parser` | sitemap 인덱스. 정규식으로 `<loc>`을 긁으면 소프트 404 HTML도 통과한다 ([[data-collection-design]] §7) |
 | 로깅 | `winston` + `nest-winston` | **`winston-daily-rotate-file` 제외** (§1.6) |
 | 테스트 | Jest + `ts-jest` | `tomomachi` 동일 |
 | 린트 | ESLint 9 + Prettier + `simple-import-sort` | **9에 머문다. 상한 근거는 §1.4** |
@@ -370,6 +372,8 @@ API를 끼우면 자격증명이 **비공개 서비스에만** 남는다.
 | Cloud Storage 이미지 캐싱 | 저작물. 링크아웃만 ([[plan]] §1.4) |
 | `@nestjs/swagger` | 읽기 API의 소비자가 `fe/` 하나뿐이다. 스키마는 zod로 `fe/` 경계에서 검증한다 (§2.8) |
 | repo 분할 | 개인 규모에 오버헤드 (§2.5) |
+| `robots.txt` 매처 자체 구현 | 와일드카드·`$`·최장일치 규칙이 미묘하다. 틀린 허용은 되돌릴 수 없다 (§1.1) |
+| `axios` / `got` | Node 24 내장 `fetch`로 충분하다. 재시도·간격은 어차피 우리가 감싼다 |
 
 ---
 
