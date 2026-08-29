@@ -37,6 +37,11 @@ const pollCollections = z.object({
   date_pattern: z.string().nullable().default(null),
   /** 오늘 기준 **앞뒤** 일수. 미래를 자르면 예약 사전 감지가 죽는다 */
   recent_days: z.number().int().positive().default(14),
+  /**
+   * 1회 실행에서 돌 컬렉션 수 상한. 규칙이 조금만 넓어져도 요청이 조용히 몇십 배가 된다.
+   * 넘치면 자르고 **로그에 남긴다** — 조용한 절삭은 "전부 돌았다"로 읽힌다
+   */
+  max_collections: z.number().int().positive().default(30),
 });
 
 export const sourceConfigSchema = z.object({

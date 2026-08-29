@@ -10,11 +10,13 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { keepAllowedFields } from '@/modules/collectors/adapters/shopify/payload-fields';
 import {
   extractCollectionHandles,
   pickCollectionSitemaps,
 } from '@/modules/collectors/adapters/shopify/sitemap';
 import { HttpFetcherService } from '@/modules/http/http-fetcher.service';
+import { HttpTransportService } from '@/modules/http/http-transport.service';
 import { RobotsService } from '@/modules/http/robots.service';
 
 /** 채집은 조사이지 수집이 아니다. 컬렉션 2개면 파서 개발에 충분하다 */
@@ -22,30 +24,14 @@ const COLLECTION_SAMPLE = 2;
 const PRODUCT_SAMPLE = 8;
 const CRAWL_DELAY_SEC = 3;
 
-/**
- * 저장소는 public이다. 설명문·이미지를 그대로 커밋하면 **원문 전재**다
- * (docs/data-collection-design.md §4.1, plan.md §1.4).
- * 파서가 실제로 읽는 필드만 남긴다 — 판정 근거는 태그와 `available`이지 본문이 아니다.
- */
-const KEEP_PRODUCT_KEYS = [
-  'id',
-  'handle',
-  'title',
-  'published_at',
-  'created_at',
-  'updated_at',
-  'vendor',
-  'product_type',
-  'tags',
-] as const;
-const KEEP_VARIANT_KEYS = ['id', 'sku', 'price', 'available', 'taxable', 'title'] as const;
 
 async function main(): Promise<void> {
   const [baseUrl, slug] = process.argv.slice(2);
   if (!baseUrl || !slug) throw new Error('사용법: capture-fixtures.ts <base-url> <slug>');
 
-  const robots = new RobotsService();
-  const fetcher = new HttpFetcherService(robots);
+  const transport = new HttpTransportService();
+  const robots = new RobotsService(transport);
+  const fetcher = new HttpFetcherService(robots, transport);
   const outDir = join(__dirname, '..', 'test', 'fixtures', slug);
   mkdirSync(outDir, { recursive: true });
 
@@ -82,19 +68,12 @@ async function main(): Promise<void> {
   }
 }
 
+/**
+ * 저장소는 public이다. 설명문·이미지를 그대로 커밋하면 **원문 전재**다.
+ * 수집 경로와 **같은 화이트리스트**를 쓴다 — 두 곳에 적으면 반드시 어긋난다.
+ */
 function redact(payload: { products: Record<string, unknown>[] }): unknown {
-  return {
-    products: payload.products.slice(0, PRODUCT_SAMPLE).map((product) => ({
-      ...pick(product, KEEP_PRODUCT_KEYS),
-      variants: (product.variants as Record<string, unknown>[] | undefined)?.map((variant) =>
-        pick(variant, KEEP_VARIANT_KEYS),
-      ),
-    })),
-  };
-}
-
-function pick(source: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
-  return Object.fromEntries(keys.filter((key) => key in source).map((key) => [key, source[key]]));
+  return { products: payload.products.slice(0, PRODUCT_SAMPLE).map(keepAllowedFields) };
 }
 
 function save(dir: string, name: string, body: string): void {

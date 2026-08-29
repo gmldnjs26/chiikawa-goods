@@ -12,7 +12,8 @@ import { createHash } from 'node:crypto';
  *
  * 3. **의미 없이 흔들리는 필드** — Shopify `updated_at`은 요청할 때마다 바뀐다.
  *    49초 간격 두 번에 622건 전부가 새 행이 됐다 (실측). `excludeKeys`로 뺀다.
- *    빼는 것은 **해시 입력뿐**이고 `raw_payload`는 원문 그대로 저장한다.
+ *    빼는 것은 **해시 입력뿐**이다. `raw_payload`에 무엇을 담는지는 어댑터가 정한다
+ *    (화이트리스트 — `adapters/shopify/payload-fields.ts`).
  */
 export function payloadHash(payload: unknown, excludeKeys: readonly string[] = []): string {
   return createHash('sha256').update(canonicalize(payload, excludeKeys)).digest('hex');

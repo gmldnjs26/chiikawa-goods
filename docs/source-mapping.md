@@ -53,7 +53,7 @@
 | `external_id` | `product.id` (숫자) | **`handle`이 아니다.** handle은 변경될 수 있다 |
 | `url` | `{base_url}/products/{handle}` | |
 | `raw_title` | `product.title` | 가공 없음 |
-| `raw_payload` | product 객체 전체 | 컬렉션 소속을 `_collections: [handle]`로 덧붙인다 |
+| `raw_payload` | product 객체에서 **선별한 필드만** | 아래 화이트리스트. 컬렉션 소속을 `_collections: [handle]`로 덧붙인다 |
 | `payload_hash` | `raw_payload` 정규화 후 SHA-256 | 키 순서 고정 필요 |
 | `observed_at` | 수집 시각 | |
 
@@ -61,6 +61,20 @@
 > `20260821`(발매)과 `20260821-release-sale`(발매＆세일)에 동시에 들어 있는 사례가 있다.
 > 컬렉션마다 mention을 만들면 **같은 상품이 중복된다.**
 > → **상품 단위로 1건**으로 합치고, 소속 컬렉션 전부를 `_collections` 배열에 넣는다.
+
+> [!important] `raw_payload`는 **원문 전체가 아니다** (결정 2026-08-29)
+> 「product 객체 전체」로 적혀 있었지만 [[data-collection-design]] §4.1은
+> **제목 · 가격 · 날짜 · 링크만** 저장하라고 한다. 둘이 어긋나면 **좁은 쪽이 이긴다** —
+> `body_html`(상품 설명문 전문)과 `images`는 저작물이고, 그걸 DB에 쌓는 것은 전재다.
+> `UNIQUE(source_id, external_id, payload_hash)` 때문에 설명문이 한 글자 고쳐질 때마다
+> 전문이 든 행이 하나 더 쌓인다는 점에서 더 나쁘다.
+>
+> 남기는 필드 (판정에 실제로 쓰는 것만):
+> `id` `handle` `title` `published_at` `created_at` `updated_at` `vendor` `product_type` `tags`
+> `variants[].{id, sku, price, available, taxable, title}` `_collections`
+>
+> 픽스처 채집 스크립트가 이미 같은 목록으로 걸러내고 있었다. 수집 경로에도 같은 것을 쓴다 —
+> **한 곳에 정의하고 양쪽이 그걸 참조한다.**
 
 > [!warning] `updated_at`은 **요청할 때마다 바뀐다** (실측 2026-08-29)
 > 49초 간격으로 두 번 수집했더니 622건 전부 새 행이 됐다. 유일한 차이가
@@ -390,6 +404,39 @@ title 에 '発売'   → release
 
 → **`item.labels`(신규)** 에 넣고 카드에 칩으로 낸다. 캐릭터 태그(`ハチワレ` `うさぎ`)도 같은 성격이다.
 `region`은 **"내가 그 장소에 가야 하는가"** 일 때만 쓴다 (팝업·실점포 이벤트).
+
+---
+
+## 6.2 이용규약 확인 기록 (2026-08-29)
+
+각 소스의 `/policies/terms-of-service`를 직접 읽고 관련 조항만 요약한다. 전문은 옮기지 않는다.
+
+| 소스 | 상태 | 관련 조항 |
+| --- | --- | --- |
+| `chiikawamarket.jp` | 200 | 금지행위에 「사전 허가 없이 자동화 수단으로 상품을 구매 **그 외 본 사이트를 이용**하는 행위(**상품 페이지상의 정보 취득 등을 포함**)」. 지적재산권 조항은 사적 이용을 넘는 복제·반포·판매·공표 금지 |
+| `nagano-market.jp` | 200 | 위와 **같은 문면** (같은 운영사) |
+| `chiikawamogumogu.shop` | 200 | 「본 서비스로 얻은 정보를 **상업적으로 이용**하는 행위」 금지. 취득한 저작물의 복제·전재·배포·판매 금지. **자동화 수단 자체를 금지하는 조항은 없다** |
+
+> [!warning] **미결정 — 규약과 robots.txt가 어긋난다**
+> `chiikawamarket.jp`는 한쪽에서 `robots.txt`로 상품·컬렉션 경로를 열고 `agents.md`로
+> 에이전트 이용을 안내하면서, 다른 쪽에서 이용규약이 「사전 허가 없는 자동 정보 취득」을
+> 금지행위로 적는다. **둘 중 무엇이 우선인지 우리가 정할 수 없다.**
+>
+> 이건 코드로 해결되는 문제가 아니다. 선택지는 3개다 —
+> ① 운영사에 사전 허가를 문의한다 ② 공식 채널(`agents.md`가 가리키는 UCP/MCP 등)로 옮긴다
+> ③ 해당 소스를 Tier 3(보류)로 내린다.
+>
+> **결정 전까지 이 소스들에 대한 정기 수집을 켜지 않는다.** `source.enabled`는 사람이 켠다.
+> `chiikawamogumogu.shop`은 자동화 금지 조항이 없고 우리가 무수익이므로 성격이 다르지만,
+> 같이 판단한다.
+
+### 6.3 `/collections/<handle>/products.json`의 근거
+
+Shopify **Ajax API 레퍼런스에 실린 경로가 아니다.** 스토어프론트가 공개로 여는 관행적 경로다.
+
+- `robots.txt`에서 허용됨을 확인했다 (3소스, 2026-08-29)
+- 인증·토큰이 필요 없고 로그인 뒤 화면이 아니다
+- **「금지라고 안 써 있으니 해도 된다」로 두지 않는다** — 위 §6.2의 판단에 함께 걸린다
 
 ---
 

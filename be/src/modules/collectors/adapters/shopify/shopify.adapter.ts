@@ -8,6 +8,7 @@ import type {
 import { HttpFetcherService } from '@/modules/http/http-fetcher.service';
 
 import { selectCollections } from './collection-select';
+import { keepAllowedFields } from './payload-fields';
 import { hasNextPage, PAGE_SIZE, parseProductsPage, ShopifyProduct } from './product';
 import { judgeRelevance } from './relevance';
 import { extractCollectionHandles, pickCollectionSitemaps } from './sitemap';
@@ -34,8 +35,12 @@ export class ShopifyAdapter implements CollectorAdapter {
    */
   async collect(input: CollectInput): Promise<CollectedMention[]> {
     const handles = await this.discoverHandles(input);
-    const targets = selectCollections(handles, input.config, new Date());
+    const { handles: targets, dropped } = selectCollections(handles, input.config, new Date());
     this.logger.log(`컬렉션 ${handles.length}개 중 ${targets.length}개를 돈다`);
+    if (dropped > 0) {
+      // 조용히 자르지 않는다. 상한이 실제로 물렸다는 신호가 없으면 "전부 돌았다"로 읽힌다
+      this.logger.warn(`상한(max_collections)에 걸려 ${dropped}개를 이번 실행에서 뺐다`);
+    }
 
     /** 같은 상품이 여러 컬렉션에 있다. 컬렉션마다 mention을 만들면 중복된다 */
     const byProductId = new Map<number, { product: ShopifyProduct; collections: string[] }>();
@@ -102,7 +107,8 @@ export class ShopifyAdapter implements CollectorAdapter {
       externalId: String(product.id),
       url: `${input.baseUrl}/products/${product.handle}`,
       rawTitle: product.title,
-      rawPayload: { ...product, _collections: sorted },
+      // 원문 전체를 넣지 않는다 — 설명문·이미지는 저작물이다 (payload-fields.ts)
+      rawPayload: { ...keepAllowedFields(product), _collections: sorted },
       relevance: judgeRelevance({ tags, collections: sorted }, input.config),
     };
   }

@@ -54,6 +54,18 @@ export class CollectService {
 
   private async collectOne(source: LoadedSource): Promise<void> {
     const { row, config } = source;
+    const lastSuccess = await this.lastSuccessAt(row.id);
+
+    // 락은 **동시 실행**만 막는다. 앞 실행이 끝났으면 락은 열려 있고,
+    // 스케줄러가 1분마다 때리면 1분마다 수집한다. 주기는 여기서 지킨다
+    if (this.isTooSoon(lastSuccess, row.intervalSec)) {
+      await this.runs.save(
+        this.runs.create({ sourceId: row.id, status: 'skipped_idle', finishedAt: new Date() }),
+      );
+      this.logger.log(`${row.code}: ${row.intervalSec}초가 안 지났다. 요청 없이 끝낸다`);
+      return;
+    }
+
     const runner = await this.lock.acquire(row.id);
 
     if (runner === null) {
@@ -72,7 +84,7 @@ export class CollectService {
         sourceId: row.id,
         baseUrl: row.baseUrl,
         config,
-        since: await this.lastSuccessAt(row.id),
+        since: lastSuccess,
         crawlDelaySec: row.crawlDelaySec,
       });
 
@@ -106,14 +118,21 @@ export class CollectService {
       errorMessage: message.slice(0, 2000),
     });
 
-    // 차단당했으면 스스로 내린다 (§4.1). 계속 두드리면 그 소스를 영구히 잃는다
-    if (failureKind === 'blocked') {
+    // 차단당했으면 스스로 내린다 (§4.1). 계속 두드리면 그 소스를 영구히 잃는다.
+    // robots.txt가 막은 경로는 여기 해당하지 않는다 — 상대가 우리를 막은 게 아니다
+    if (collectError?.shouldDisableSource === true) {
       await this.sources.update(row.id, { enabled: false, disabledReason: message.slice(0, 500) });
       this.logger.error(`${row.code}: 차단 신호로 소스를 내렸다 — ${message}`);
       return;
     }
 
     this.logger.error(`${row.code}: 실패(${failureKind}) — ${message}`);
+  }
+
+  /** 마지막 성공에서 `interval_sec`이 안 지났으면 외부 요청 없이 끝낸다 */
+  private isTooSoon(lastSuccess: Date | null, intervalSec: number): boolean {
+    if (lastSuccess === null) return false;
+    return Date.now() - lastSuccess.getTime() < intervalSec * 1000;
   }
 
   /** `source.last_success_at`을 두지 않는다 — `collection_run`에서 파생되는 값이다 */

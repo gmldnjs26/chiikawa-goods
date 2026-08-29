@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import robotsParser from 'robots-parser';
 
 import { CollectError } from './http.errors';
-import { UA_TOKEN, USER_AGENT } from './user-agent';
+import { HttpTransportService, MIN_INTERVAL_MS } from './http-transport.service';
+import { UA_TOKEN } from './user-agent';
 
 interface HostRules {
   /** `null`이면 robots.txt가 없다 = 전부 허용 */
@@ -19,6 +20,8 @@ interface HostRules {
 export class RobotsService {
   private readonly logger = new Logger(RobotsService.name);
   private readonly cache = new Map<string, Promise<HostRules>>();
+
+  constructor(private readonly transport: HttpTransportService) {}
 
   /** 호스트당 1회만 받는다. 수집 1회 동안 robots가 바뀔 일은 없다 */
   private rulesFor(url: URL): Promise<HostRules> {
@@ -46,30 +49,35 @@ export class RobotsService {
     return robot?.getCrawlDelay(UA_TOKEN) ?? null;
   }
 
+  /**
+   * robots.txt 자체는 robots 검사 대상이 아니지만 **전송 층은 그대로 탄다** —
+   * 여기 온 403/챌린지도 차단이고, 타임아웃도 필요하다.
+   */
   private async load(origin: string): Promise<HostRules> {
-    const robotsUrl = `${origin}/robots.txt`;
-    let response: Response;
+    const robotsUrl = new URL('/robots.txt', origin);
+
+    // 404를 흡수해야 하므로 `http` 실패만 여기서 가른다. 차단은 그대로 던진다
+    let body: string;
     try {
-      response = await fetch(robotsUrl, { headers: { 'User-Agent': USER_AGENT } });
+      const response = await this.transport.request(robotsUrl, MIN_INTERVAL_MS);
+      if (response.location !== null) {
+        // robots.txt가 리다이렉트되면 종착지를 따라가지 않는다. 규칙을 모르는 상태다
+        throw new CollectError('http', `robots.txt가 리다이렉트된다 — ${robotsUrl.href}`);
+      }
+      body = response.body;
     } catch (error) {
-      // 받아보지 못했으면 막힌 것으로 본다. 모르는 채로 때리지 않는다
-      throw new CollectError('network', `robots.txt를 받지 못했다 — ${robotsUrl}: ${String(error)}`);
+      if (error instanceof CollectError && isMissing(error)) {
+        this.logger.log(`robots.txt 없음 — ${origin}. 전부 허용으로 본다`);
+        return { robot: null };
+      }
+      // 4xx/5xx는 "규칙을 모른다"이지 "허용"이 아니다. 이 실행은 포기한다
+      throw error;
     }
 
-    if (response.status === 404 || response.status === 410) {
-      this.logger.log(`robots.txt 없음 — ${origin}. 전부 허용으로 본다`);
-      return { robot: null };
-    }
-
-    // 4xx/5xx는 "규칙을 모른다"이지 "허용"이 아니다. 이 실행은 포기한다
-    if (!response.ok) {
-      throw new CollectError(
-        'http',
-        `robots.txt 응답이 비정상이다 — ${robotsUrl}: ${response.status}`,
-        response.status,
-      );
-    }
-
-    return { robot: robotsParser(robotsUrl, await response.text()) };
+    return { robot: robotsParser(robotsUrl.href, body) };
   }
+}
+
+function isMissing(error: CollectError): boolean {
+  return error.httpStatus === 404 || error.httpStatus === 410;
 }
