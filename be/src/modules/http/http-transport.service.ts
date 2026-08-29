@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { exceedsRetryAfter, isBlockSignal } from './block-signal';
+import { exceedsRetryAfter, isBlockSignal, retryAfterMs } from './block-signal';
 import { HostQueue } from './host-queue';
 import { BlockedError, CollectError } from './http.errors';
 import { USER_AGENT } from './user-agent';
@@ -40,9 +40,13 @@ export class HttpTransportService {
   /** 재시도도 큐 안에서 돈다 — 백오프 중에 다른 요청이 끼어들면 간격이 무너진다 */
   private async attempt(url: URL, intervalMs: number): Promise<RawResponse> {
     let lastError: CollectError | null = null;
+    /** 상대가 말한 대기 시간. 우리 백오프보다 길면 그쪽을 따른다 */
+    let retryAfterMs = 0;
 
     for (let tries = 1; tries <= MAX_ATTEMPTS; tries += 1) {
-      if (tries > 1) await sleep(BACKOFF_BASE_MS * 2 ** (tries - 2) + intervalMs);
+      if (tries > 1) {
+        await sleep(Math.max(BACKOFF_BASE_MS * 2 ** (tries - 2) + intervalMs, retryAfterMs));
+      }
 
       try {
         return await this.once(url);
@@ -53,6 +57,7 @@ export class HttpTransportService {
         if (error.failureKind !== 'network' && !isRetryableStatus(error.httpStatus)) throw error;
 
         lastError = error;
+        retryAfterMs = error.retryAfterMs;
         this.logger.warn(`시도 실패 ${tries}/${MAX_ATTEMPTS} — ${url.href}: ${error.message}`);
       }
     }
@@ -88,7 +93,14 @@ export class HttpTransportService {
       return { url: url.href, status: response.status, body, location, contentType: null };
     }
     if (!response.ok) {
-      throw new CollectError('http', `HTTP ${response.status} — ${url.href}`, response.status);
+      const error = new CollectError(
+        'http',
+        `HTTP ${response.status} — ${url.href}`,
+        response.status,
+      );
+      // 예산 안이라 포기하진 않지만, 그렇다고 그보다 먼저 가지도 않는다
+      error.retryAfterMs = retryAfterMs(response);
+      throw error;
     }
 
     return {

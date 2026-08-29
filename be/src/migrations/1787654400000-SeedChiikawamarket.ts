@@ -4,6 +4,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Tier 0 첫 소스 (docs/data-collection-design.md §5, docs/source-mapping.md §6).
  *
  * **소스 추가 = `source` 행 1개 + migration 1개. 코드 변경 없음.**
+ *
+ * **`enabled=false`로 넣는다.** 이용규약이 「사전 허가 없는 자동 정보 취득」을 금지행위로
+ * 적는데 `robots.txt`·`agents.md`는 열어 둔다 — 어느 쪽이 우선인지 우리가 정할 수 없다
+ * (docs/source-mapping.md §6.2). 문서에만 적힌 보류는 보류가 아니다. **사람이 켠다.**
  * 태그 규칙·컬렉션 규칙이 전부 `config`에 있다 — 정규식을 코드에 두면 이 성질이 깨진다.
  */
 export class SeedChiikawamarket1787654400000 implements MigrationInterface {
@@ -35,9 +39,10 @@ export class SeedChiikawamarket1787654400000 implements MigrationInterface {
     await queryRunner.query(
       `INSERT INTO "source"
          ("code", "name", "kind", "platform", "fetch_kind", "config",
-          "base_url", "channel", "interval_sec", "crawl_delay_sec", "silence_alert_sec")
+          "base_url", "channel", "interval_sec", "crawl_delay_sec", "silence_alert_sec",
+          "enabled", "disabled_reason")
        VALUES ($1, $2, 'official_store', 'shopify', 'json', $3::jsonb,
-               $4, 'online_official', $5, $6, $7)`,
+               $4, 'online_official', $5, $6, $7, false, $8)`,
       [
         'chiikawamarket',
         'ちいかわマーケット',
@@ -46,6 +51,7 @@ export class SeedChiikawamarket1787654400000 implements MigrationInterface {
         1800, // 30분
         3, // robots.txt에 Crawl-delay가 없다. 우리가 정한 값이다
         60 * 60 * 24 * 3, // 3일 조용하면 이상하다
+        '이용규약 판단 대기 — docs/source-mapping.md §6.2',
       ],
     );
   }

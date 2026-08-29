@@ -14,6 +14,9 @@ export class CollectError extends Error {
     this.name = 'CollectError';
   }
 
+  /** 상대가 `Retry-After`로 말한 대기 시간. 우리 백오프의 하한이 된다 */
+  retryAfterMs = 0;
+
   /** 소스를 통째로 내려야 하는 사건인가. 기본은 아니다 */
   get shouldDisableSource(): boolean {
     return false;

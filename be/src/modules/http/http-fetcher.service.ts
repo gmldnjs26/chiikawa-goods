@@ -59,12 +59,15 @@ export class HttpFetcherService {
   }
 
   private async requestOnce(url: URL, options: FetchOptions) {
-    if (!(await this.robots.isAllowed(url))) {
+    // robots.txt 요청에도 소스가 선언한 간격을 적용한다
+    const declaredMs = Math.max(MIN_INTERVAL_MS, options.crawlDelaySec * 1000);
+
+    if (!(await this.robots.isAllowed(url, declaredMs))) {
       // 호출 자체를 하지 않는다. 막힌 경로는 시도조차 흔적을 남긴다
       throw new RobotsDeniedError(`robots.txt가 막은 경로다 — ${url.href}`);
     }
 
-    const robotsDelaySec = await this.robots.crawlDelaySec(url);
+    const robotsDelaySec = await this.robots.crawlDelaySec(url, declaredMs);
     const intervalMs = Math.max(
       MIN_INTERVAL_MS,
       (robotsDelaySec ?? 0) * 1000,

@@ -8,7 +8,6 @@ import type {
 import { HttpFetcherService } from '@/modules/http/http-fetcher.service';
 
 import { selectCollections } from './collection-select';
-import { keepAllowedFields } from './payload-fields';
 import { hasNextPage, PAGE_SIZE, parseProductsPage, ShopifyProduct } from './product';
 import { judgeRelevance } from './relevance';
 import { extractCollectionHandles, pickCollectionSitemaps } from './sitemap';
@@ -107,8 +106,9 @@ export class ShopifyAdapter implements CollectorAdapter {
       externalId: String(product.id),
       url: `${input.baseUrl}/products/${product.handle}`,
       rawTitle: product.title,
-      // 원문 전체를 넣지 않는다 — 설명문·이미지는 저작물이다 (payload-fields.ts)
-      rawPayload: { ...keepAllowedFields(product), _collections: sorted },
+      // 걸러내기는 `parseProductsPage`에서 이미 끝났다 (payload-fields.ts).
+      // 여기서 또 부르지 않는다 — 두 곳에 두면 한쪽이 사라져도 안 울린다
+      rawPayload: { ...product, _collections: sorted },
       relevance: judgeRelevance({ tags, collections: sorted }, input.config),
     };
   }

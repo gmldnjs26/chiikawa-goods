@@ -55,10 +55,11 @@ export class CollectService {
   private async collectOne(source: LoadedSource): Promise<void> {
     const { row, config } = source;
     const lastSuccess = await this.lastSuccessAt(row.id);
+    const lastRequested = await this.lastRequestingRunAt(row.id);
 
     // 락은 **동시 실행**만 막는다. 앞 실행이 끝났으면 락은 열려 있고,
     // 스케줄러가 1분마다 때리면 1분마다 수집한다. 주기는 여기서 지킨다
-    if (this.isTooSoon(lastSuccess, row.intervalSec)) {
+    if (this.isTooSoon(lastRequested, row.intervalSec)) {
       await this.runs.save(
         this.runs.create({ sourceId: row.id, status: 'skipped_interval', finishedAt: new Date() }),
       );
@@ -129,10 +130,30 @@ export class CollectService {
     this.logger.error(`${row.code}: 실패(${failureKind}) — ${message}`);
   }
 
-  /** 마지막 성공에서 `interval_sec`이 안 지났으면 외부 요청 없이 끝낸다 */
-  private isTooSoon(lastSuccess: Date | null, intervalSec: number): boolean {
-    if (lastSuccess === null) return false;
-    return Date.now() - lastSuccess.getTime() < intervalSec * 1000;
+  /**
+   * 게이트 기준은 **마지막으로 외부 요청을 낸 실행**이다. 성공이 아니다 —
+   * 계속 실패하는 소스는 성공 시각이 영영 안 갱신되고, 그러면 주기 보호가 0이 된다.
+   * 실패가 반복되는 순간이야말로 상대가 우리를 눈여겨보는 때다.
+   *
+   * `started_at`으로 잰다. `finished_at`으로 재면 수집에 걸린 시간만큼 다음 실행이
+   * 밀려서 스케줄러가 정확히 `interval_sec`으로 때릴 때 **실효 주기가 2배**가 된다.
+   */
+  private isTooSoon(lastRequested: Date | null, intervalSec: number): boolean {
+    if (lastRequested === null) return false;
+    return Date.now() - lastRequested.getTime() < intervalSec * 1000;
+  }
+
+  /** `skipped_*`는 외부 요청을 내지 않았으므로 세지 않는다 */
+  private async lastRequestingRunAt(sourceId: string): Promise<Date | null> {
+    const last = await this.runs.findOne({
+      where: [
+        { sourceId, status: 'success' },
+        { sourceId, status: 'failed' },
+        { sourceId, status: 'running' },
+      ],
+      order: { startedAt: 'DESC' },
+    });
+    return last?.startedAt ?? null;
   }
 
   /** `source.last_success_at`을 두지 않는다 — `collection_run`에서 파생되는 값이다 */

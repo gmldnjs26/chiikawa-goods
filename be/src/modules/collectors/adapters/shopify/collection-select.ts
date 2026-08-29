@@ -2,6 +2,13 @@ import type { SourceConfig } from '@/modules/sources/source-config.schema';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+interface DatedHandle {
+  readonly handle: string;
+  readonly distance: number;
+  /** 예약 컬렉션은 미래 날짜다. 상한 절삭에서 먼저 살린다 */
+  readonly future: boolean;
+}
+
 /**
  * 도는 컬렉션을 고른다 (docs/source-mapping.md §6.0).
  *
@@ -47,12 +54,22 @@ function matchDated(handles: string[], pattern: string, recentDays: number, now:
     .map((handle) => {
       const captured = regex.exec(handle)?.[1];
       const date = captured === undefined ? null : parseYyyymmdd(captured);
-      return date === null ? null : { handle, distance: Math.abs(date.getTime() - now.getTime()) };
+      if (date === null) return null;
+
+      const offset = date.getTime() - now.getTime();
+      return { handle, distance: Math.abs(offset), future: offset >= 0 };
     })
-    .filter((entry): entry is { handle: string; distance: number } => entry !== null)
+    .filter((entry): entry is DatedHandle => entry !== null)
     .filter((entry) => entry.distance <= windowMs)
+    // 미래를 먼저 살린다 — 상한에 걸려 잘려 나가는 쪽이 예약 컬렉션이면
+    // 「미래를 자르면 예약 감지가 죽는다」가 상한이라는 다른 문으로 되살아난다.
     // 거리가 같으면 핸들로 가른다. 정렬이 안정적이어야 결과가 결정적이다
-    .sort((a, b) => a.distance - b.distance || a.handle.localeCompare(b.handle))
+    .sort(
+      (a, b) =>
+        Number(b.future) - Number(a.future) ||
+        a.distance - b.distance ||
+        a.handle.localeCompare(b.handle),
+    )
     .map((entry) => entry.handle);
 }
 

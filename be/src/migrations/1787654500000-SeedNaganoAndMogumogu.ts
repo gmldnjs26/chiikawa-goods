@@ -78,12 +78,14 @@ export class SeedNaganoAndMogumogu1787654500000 implements MigrationInterface {
       name: 'ナガノマーケット',
       baseUrl: 'https://nagano-market.jp',
       config: this.nagano,
+      disabledReason: '이용규약 판단 대기 — docs/source-mapping.md §6.2',
     });
     await this.insert(queryRunner, {
       code: 'chiikawamogumogu',
       name: 'ちいかわもぐもぐ本舗',
       baseUrl: 'https://chiikawamogumogu.shop',
       config: this.mogumogu,
+      disabledReason: '이용규약 판단 대기(자동화 금지 조항은 없음) — docs/source-mapping.md §6.2',
     });
   }
 
@@ -93,17 +95,31 @@ export class SeedNaganoAndMogumogu1787654500000 implements MigrationInterface {
     ]);
   }
 
+  /**
+   * **둘 다 `enabled=false`다.** 사유는 소스마다 다르다 —
+   * `nagano-market.jp`는 `chiikawamarket.jp`와 같은 규약 문면이라 같은 보류에 걸린다.
+   * `chiikawamogumogu.shop`은 자동화 금지 조항이 **없지만** 같이 판단하기로 했다
+   * (docs/source-mapping.md §6.2). 켜는 것은 사람의 결정이다.
+   */
   private insert(
     queryRunner: QueryRunner,
-    source: { code: string; name: string; baseUrl: string; config: object },
+    source: { code: string; name: string; baseUrl: string; config: object; disabledReason: string },
   ): Promise<unknown> {
     return queryRunner.query(
       `INSERT INTO "source"
          ("code", "name", "kind", "platform", "fetch_kind", "config",
-          "base_url", "channel", "interval_sec", "crawl_delay_sec", "silence_alert_sec")
+          "base_url", "channel", "interval_sec", "crawl_delay_sec", "silence_alert_sec",
+          "enabled", "disabled_reason")
        VALUES ($1, $2, 'official_store', 'shopify', 'json', $3::jsonb,
-               $4, 'online_official', 1800, 3, $5)`,
-      [source.code, source.name, JSON.stringify(source.config), source.baseUrl, 60 * 60 * 24 * 3],
+               $4, 'online_official', 1800, 3, $5, false, $6)`,
+      [
+        source.code,
+        source.name,
+        JSON.stringify(source.config),
+        source.baseUrl,
+        60 * 60 * 24 * 3,
+        source.disabledReason,
+      ],
     );
   }
 }

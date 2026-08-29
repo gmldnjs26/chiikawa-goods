@@ -1,5 +1,7 @@
 import { parseJsonBody } from '@/modules/http/body-validation';
 
+import { keepAllowedFields } from './payload-fields';
+
 /** `products.json` 1페이지 상한. 250건이 오면 "끝"이 아니라 "다음 페이지"다 */
 export const PAGE_SIZE = 250;
 
@@ -20,7 +22,12 @@ export function parseProductsPage(url: string, body: string): ShopifyProduct[] {
   if (!Array.isArray(parsed.products)) {
     throw new Error(`products가 배열이 아니다 — ${url}`);
   }
-  return parsed.products as ShopifyProduct[];
+
+  // **경계에서 거른다.** 하류에 `body_html`이 든 형태 자체를 존재시키지 않는다.
+  // 저장 직전 한 줄에 의존하면 그 한 줄이 사라졌을 때 아무 테스트도 울지 않는다
+  return (parsed.products as Record<string, unknown>[]).map(
+    (product) => keepAllowedFields(product) as unknown as ShopifyProduct,
+  );
 }
 
 /** 250건이면 다음 페이지가 있다. 여기서 멈추면 조용한 누락이다 */

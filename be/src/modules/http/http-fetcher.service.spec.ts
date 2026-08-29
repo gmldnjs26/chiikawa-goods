@@ -135,7 +135,8 @@ describe('HttpFetcherService — 리다이렉트와 차단 판정', () => {
   });
 
   it('503 + 챌린지 마커는 재시도하지 않는다 — 본문 뒤쪽에 있어도 잡는다', async () => {
-    const challenge = `${'설명 '.repeat(900)}cf-browser-verification`;
+    // 챌린지는 HTML 인터스티셜로 온다. 마커는 본문 뒤쪽에 있다
+    const challenge = `<!DOCTYPE html><html><body>${'대기 '.repeat(900)}cf-browser-verification</body></html>`;
     route([
       [/robots\.txt/, () => new Response('User-agent: *\nDisallow:\n', { status: 200 })],
       [/\/a$/, () => new Response(challenge, { status: 503 })],
