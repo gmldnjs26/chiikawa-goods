@@ -71,10 +71,32 @@
 >
 > 남기는 필드 (판정에 실제로 쓰는 것만):
 > `id` `handle` `title` `published_at` `created_at` `updated_at` `vendor` `product_type` `tags`
-> `variants[].{id, sku, price, available, taxable, title}` `_collections`
+> `variants[].{id, sku, price, available, taxable, title}` `images[0].{src}` `_collections`
 >
 > 픽스처 채집 스크립트가 이미 같은 목록으로 걸러내고 있었다. 수집 경로에도 같은 것을 쓴다 —
 > **한 곳에 정의하고 양쪽이 그걸 참조한다.**
+
+> [!important] `images[0].src`는 되돌린다 (결정 2026-08-30, 위 블록을 일부 대체)
+> 위에서 `images`를 통째로 뺐다. **너무 많이 잘랐다.**
+> [[plan]] §2.1이 금지하는 것은 이미지 **전재** — 파일을 복제해 우리가 서빙하는 행위다.
+> **URL 문자열 하나를 갖는 것은 전재가 아니다.** [[db-schema]] `item.image_url` 주석
+> 「링크만. 파일은 갖지 않는다」가 처음부터 그 선을 그어놨고, [[plan]] §6.3이
+> 카드에 이미지를 요구한다. 화이트리스트가 §1.4 문구만 보고 그 입력을 지워서
+> `item.image_url`을 영구히 `NULL`로 만들고 있었다.
+>
+> **`body_html`은 계속 제외한다.** 되돌리는 것은 `images[0].src` **하나뿐**이다.
+> `alt`(설명 텍스트) · `width` · `height` · `position` · `created_at` · `updated_at`은 버린다 —
+> 특히 `images[].updated_at`은 위에서 고친 해시 노이즈를 그대로 되살린다.
+> 배열 첫 장만 남긴다. 카드는 1장만 쓰고, 갤러리는 만들지 않는다.
+>
+> 핫링크 차단은 **없음으로 실측됐다** (2026-08-30) — 외부 `Referer`로도 `HTTP/2 200`,
+> `Cross-Origin-Resource-Policy` 헤더 없음. `referrerpolicy`를 박지 않는다.
+>
+> **남은 미확인 1건 (재채집 필요):** `src`의 `?v=` 파라미터가 요청마다 바뀌는지.
+> 바뀌면 `updated_at`과 같은 함정이라 `hash_exclude` 대상이다. 캡처 2회 diff로 판정한다.
+>
+> 전달 경로는 **원본 CDN 인라인 참조**로 확정됐다 ([[plan]] §2.1).
+> 이 필드가 그 `img src`의 입력이다.
 
 > [!warning] `updated_at`은 **요청할 때마다 바뀐다** (실측 2026-08-29)
 > 49초 간격으로 두 번 수집했더니 622건 전부 새 행이 됐다. 유일한 차이가
