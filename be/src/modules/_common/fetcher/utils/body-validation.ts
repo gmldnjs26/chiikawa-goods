@@ -1,4 +1,4 @@
-import { CollectError } from './http.errors';
+import { FetchError } from '../errors/fetch.error';
 
 /**
  * 본문 검증 (docs/data-collection-design.md §7).
@@ -19,23 +19,23 @@ function leading(body: string): string {
 export function parseJsonBody<T = unknown>(url: string, body: string, expectedKeys: string[]): T {
   const head = leading(body);
   if (!head.startsWith('{') && !head.startsWith('[')) {
-    throw new CollectError('validation', `JSON이 아니다 — ${url}: 선두 ${snippet(head)}`);
+    throw new FetchError('validation', `JSON이 아니다 — ${url}: 선두 ${snippet(head)}`);
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(head);
   } catch (error) {
-    throw new CollectError('validation', `JSON 파싱 실패 — ${url}: ${String(error)}`);
+    throw new FetchError('validation', `JSON 파싱 실패 — ${url}: ${String(error)}`);
   }
 
   if (expectedKeys.length > 0) {
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      throw new CollectError('validation', `객체가 아니다 — ${url}`);
+      throw new FetchError('validation', `객체가 아니다 — ${url}`);
     }
     const missing = expectedKeys.filter((key) => !(key in parsed));
     if (missing.length > 0) {
-      throw new CollectError('validation', `기대 키가 없다 — ${url}: ${missing.join(', ')}`);
+      throw new FetchError('validation', `기대 키가 없다 — ${url}: ${missing.join(', ')}`);
     }
   }
 
@@ -46,7 +46,7 @@ export function parseJsonBody<T = unknown>(url: string, body: string, expectedKe
 export function assertXmlBody(url: string, body: string): string {
   const head = leading(body);
   if (!/^<\?xml|^<rss|^<feed|^<urlset|^<sitemapindex/i.test(head)) {
-    throw new CollectError('validation', `XML이 아니다 — ${url}: 선두 ${snippet(head)}`);
+    throw new FetchError('validation', `XML이 아니다 — ${url}: 선두 ${snippet(head)}`);
   }
   return head;
 }

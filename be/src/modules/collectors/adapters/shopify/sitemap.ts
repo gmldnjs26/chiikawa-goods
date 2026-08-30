@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 
-import { assertXmlBody } from '@/modules/http/body-validation';
+import { assertXmlBody } from '@/modules/_common/fetcher/utils/body-validation';
 
 const parser = new XMLParser({ ignoreAttributes: false });
 

@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { FetcherService } from '@/modules/_common/fetcher/fetcher.service';
 import type {
   CollectedMention,
   CollectInput,
   CollectorAdapter,
 } from '@/modules/collectors/collector.contract';
-import { HttpFetcherService } from '@/modules/http/http-fetcher.service';
 
 import { selectCollections } from './collection-select';
 import { hasNextPage, PAGE_SIZE, parseProductsPage, ShopifyProduct } from './product';
@@ -26,7 +26,7 @@ export class ShopifyAdapter implements CollectorAdapter {
   readonly platform = 'shopify';
   private readonly logger = new Logger(ShopifyAdapter.name);
 
-  constructor(private readonly fetcher: HttpFetcherService) {}
+  constructor(private readonly fetcher: FetcherService) {}
 
   /**
    * `input.since`로 거르지 않는다. `updated_at`을 믿고 자르면 재입고(`available` 전이)를

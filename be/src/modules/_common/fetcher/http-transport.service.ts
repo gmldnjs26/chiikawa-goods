@@ -1,17 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { exceedsRetryAfter, isBlockSignal, retryAfterMs } from './block-signal';
-import { HostQueue } from './host-queue';
-import { BlockedError, CollectError } from './http.errors';
-import { USER_AGENT } from './user-agent';
-
-export interface RawResponse {
-  readonly url: string;
-  readonly status: number;
-  readonly body: string;
-  readonly location: string | null;
-  readonly contentType: string | null;
-}
+import type { RawResponse } from './dto/raw-response.dto';
+import { BlockedError } from './errors/blocked.error';
+import { FetchError } from './errors/fetch.error';
+import { exceedsRetryAfter, isBlockSignal, retryAfterMs } from './utils/block-signal';
+import { HostQueue } from './utils/host-queue';
+import { USER_AGENT } from './utils/user-agent';
 
 /** robots.txt에 값이 없어도 이 아래로는 내려가지 않는다 */
 export const MIN_INTERVAL_MS = 1000;
@@ -39,7 +33,7 @@ export class HttpTransportService {
 
   /** 재시도도 큐 안에서 돈다 — 백오프 중에 다른 요청이 끼어들면 간격이 무너진다 */
   private async attempt(url: URL, intervalMs: number): Promise<RawResponse> {
-    let lastError: CollectError | null = null;
+    let lastError: FetchError | null = null;
     /** 상대가 말한 대기 시간. 우리 백오프보다 길면 그쪽을 따른다 */
     let retryAfterMs = 0;
 
@@ -53,8 +47,8 @@ export class HttpTransportService {
       } catch (error) {
         // 차단은 재시도하지 않는다. 재시도가 차단을 굳힌다
         if (error instanceof BlockedError) throw error;
-        if (!(error instanceof CollectError)) throw error;
-        if (error.failureKind !== 'network' && !isRetryableStatus(error.httpStatus)) throw error;
+        if (!(error instanceof FetchError)) throw error;
+        if (error.kind !== 'network' && !isRetryableStatus(error.httpStatus)) throw error;
 
         lastError = error;
         retryAfterMs = error.retryAfterMs;
@@ -62,7 +56,7 @@ export class HttpTransportService {
       }
     }
 
-    throw lastError ?? new CollectError('network', `요청 실패 — ${url.href}`);
+    throw lastError ?? new FetchError('network', `요청 실패 — ${url.href}`);
   }
 
   private async once(url: URL): Promise<RawResponse> {
@@ -75,7 +69,7 @@ export class HttpTransportService {
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (error) {
-      throw new CollectError('network', `요청 실패 — ${url.href}: ${String(error)}`);
+      throw new FetchError('network', `요청 실패 — ${url.href}: ${String(error)}`);
     }
 
     const body = await response.text();
@@ -93,7 +87,7 @@ export class HttpTransportService {
       return { url: url.href, status: response.status, body, location, contentType: null };
     }
     if (!response.ok) {
-      const error = new CollectError(
+      const error = new FetchError(
         'http',
         `HTTP ${response.status} — ${url.href}`,
         response.status,

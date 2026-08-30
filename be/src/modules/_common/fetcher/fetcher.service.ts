@@ -1,20 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { CollectError, RobotsDeniedError } from './http.errors';
+import type { FetchOptions } from './dto/fetch-options.dto';
+import type { FetchedBody } from './dto/fetched-body.dto';
+import { FetchError } from './errors/fetch.error';
+import { RobotsDeniedError } from './errors/robots-denied.error';
 import { HttpTransportService, MIN_INTERVAL_MS } from './http-transport.service';
 import { RobotsService } from './robots.service';
-
-export interface FetchOptions {
-  /** `source.crawl_delay_sec`. robots.txt 값과 max를 잡는다 */
-  readonly crawlDelaySec: number;
-}
-
-export interface FetchedBody {
-  readonly url: string;
-  readonly status: number;
-  readonly body: string;
-  readonly contentType: string | null;
-}
 
 /** 리다이렉트 체인 상한. 이 이상은 루프로 본다 */
 const MAX_REDIRECTS = 5;
@@ -26,8 +17,8 @@ const MAX_REDIRECTS = 5;
  * 규범은 코드 품질이 아니라 제품 존속 조건이다 — 한 번 차단당하면 그 소스를 영구히 잃는다.
  */
 @Injectable()
-export class HttpFetcherService {
-  private readonly logger = new Logger(HttpFetcherService.name);
+export class FetcherService {
+  private readonly logger = new Logger(FetcherService.name);
 
   constructor(
     private readonly robots: RobotsService,
@@ -55,7 +46,7 @@ export class HttpFetcherService {
       url = next;
     }
 
-    throw new CollectError('http', `리다이렉트가 ${MAX_REDIRECTS}회를 넘었다 — ${rawUrl}`);
+    throw new FetchError('http', `리다이렉트가 ${MAX_REDIRECTS}회를 넘었다 — ${rawUrl}`);
   }
 
   private async requestOnce(url: URL, options: FetchOptions) {

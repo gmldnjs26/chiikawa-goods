@@ -10,14 +10,14 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { FetcherService } from '@/modules/_common/fetcher/fetcher.service';
+import { HttpTransportService } from '@/modules/_common/fetcher/http-transport.service';
+import { RobotsService } from '@/modules/_common/fetcher/robots.service';
 import { keepAllowedFields } from '@/modules/collectors/adapters/shopify/payload-fields';
 import {
   extractCollectionHandles,
   pickCollectionSitemaps,
 } from '@/modules/collectors/adapters/shopify/sitemap';
-import { HttpFetcherService } from '@/modules/http/http-fetcher.service';
-import { HttpTransportService } from '@/modules/http/http-transport.service';
-import { RobotsService } from '@/modules/http/robots.service';
 
 /** 채집은 조사이지 수집이 아니다. 컬렉션 2개면 파서 개발에 충분하다 */
 const COLLECTION_SAMPLE = 2;
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
 
   const transport = new HttpTransportService();
   const robots = new RobotsService(transport);
-  const fetcher = new HttpFetcherService(robots, transport);
+  const fetcher = new FetcherService(robots, transport);
   const outDir = join(__dirname, '..', 'test', 'fixtures', slug);
   mkdirSync(outDir, { recursive: true });
 

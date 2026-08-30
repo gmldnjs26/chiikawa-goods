@@ -45,6 +45,7 @@ be/src/
 ├── migrations/             migration. 평면. 하위 디렉토리 없음
 ├── modules/
 │   ├── _common/            도메인 없는 공유물
+│   │   └── <인프라>/       provider를 갖는 공유 모듈은 역할별로 나눈다 (아래)
 │   └── <도메인>/
 │       ├── entities/*.entity.ts
 │       ├── *.service.ts
@@ -57,6 +58,29 @@ be/src/
 - **빈 `.module.ts`를 미리 만들지 않는다.** provider가 생길 때 만든다.
   엔티티만 있는 도메인은 `entities/`만 있으면 된다
 - `TypeOrmModule.forFeature`는 **쓰는 모듈이** 등록한다. 전역 레포 모듈을 만들지 않는다
+
+### `_common/` 아래 인프라 모듈
+
+도메인이 아니라 **기술적 관심사**를 담는 모듈이다 (`_common/fetcher/` = 외부 요청).
+파일이 10개를 넘으면 **역할별로** 나눈다. 도메인 모듈의 평면 배치와 다르다.
+
+```
+_common/<인프라>/
+├── dto/           입출력 형태. `*.dto.ts`
+├── errors/        예외와 그 종류. `*.error.ts`
+├── utils/         상태 없는 순수 함수 · 작은 클래스
+├── *.service.ts   provider
+└── <이름>.module.ts
+```
+
+- **`controller/`도 `entities/`도 없다.** 라우트가 없고(진입점이 CLI다 §1) 테이블도 없다.
+  읽기 API를 만들 때 그쪽 모듈에 `controller`·`dto`가 생긴다
+- **`dto/`는 클래스가 아니라 `interface`다.** `class-validator`는 HTTP 요청 본문을 검증할 때
+  쓴다. 여기 값은 우리가 만들어 넘기는 것이라 검증할 경계가 아니다
+- **`_common/`은 특정 도메인을 모른다.** 도메인 타입을 import하면 의존 방향이 뒤집힌다.
+  자체 타입을 정의하고 **도메인 쪽이 옮긴다** (`FetchErrorKind` → `failure_kind` 변환은
+  `collect.service.ts`에 있다). 매핑을 `Record<A, B>`로 두면 한쪽이 늘 때 컴파일이 깨진다
+- **NestJS 내장과 이름이 겹치지 않게 한다.** `HttpModule`은 `@nestjs/axios`가 쓴다
 
 ### 의존 방향
 

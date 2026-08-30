@@ -1,11 +1,12 @@
-import { BlockedError, CollectError } from './http.errors';
-import { HttpFetcherService } from './http-fetcher.service';
+import { BlockedError } from './errors/blocked.error';
+import { FetchError } from './errors/fetch.error';
+import { FetcherService } from './fetcher.service';
 import { HttpTransportService } from './http-transport.service';
 import { RobotsService } from './robots.service';
 
 const ALLOW_ALL = 'User-agent: *\nDisallow:\n';
 
-describe('HttpFetcherService', () => {
+describe('FetcherService', () => {
   const fetchMock = jest.fn<Promise<Response>, [unknown, unknown?]>();
 
   beforeEach(() => {
@@ -21,7 +22,7 @@ describe('HttpFetcherService', () => {
 
   const sut = () => {
     const transport = new HttpTransportService();
-    return new HttpFetcherService(new RobotsService(transport), transport);
+    return new FetcherService(new RobotsService(transport), transport);
   };
 
   it('robots.txt가 막은 경로는 호출조차 하지 않는다', async () => {
@@ -52,7 +53,7 @@ describe('HttpFetcherService', () => {
       .catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(BlockedError);
-    expect((error as CollectError).failureKind).toBe('blocked');
+    expect((error as FetchError).kind).toBe('blocked');
   });
 
   it('404는 재시도하지 않는다', async () => {
@@ -79,7 +80,7 @@ describe('HttpFetcherService', () => {
         .catch((error: unknown) => error);
 
       await jest.advanceTimersByTimeAsync(60_000);
-      expect(await pending).toBeInstanceOf(CollectError);
+      expect(await pending).toBeInstanceOf(FetchError);
       // robots 1 + 시도 3
       expect(fetchMock).toHaveBeenCalledTimes(4);
     } finally {
@@ -96,7 +97,7 @@ describe('HttpFetcherService', () => {
   });
 });
 
-describe('HttpFetcherService — 리다이렉트와 차단 판정', () => {
+describe('FetcherService — 리다이렉트와 차단 판정', () => {
   const fetchMock = jest.fn<Promise<Response>, [unknown, unknown?]>();
 
   beforeEach(() => {
@@ -106,7 +107,7 @@ describe('HttpFetcherService — 리다이렉트와 차단 판정', () => {
 
   const sut = () => {
     const transport = new HttpTransportService();
-    return new HttpFetcherService(new RobotsService(transport), transport);
+    return new FetcherService(new RobotsService(transport), transport);
   };
 
   /** 호스트별 robots.txt와 응답을 URL로 라우팅한다 */

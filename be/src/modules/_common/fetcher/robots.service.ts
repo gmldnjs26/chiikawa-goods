@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import robotsParser from 'robots-parser';
 
-import { CollectError } from './http.errors';
+import { FetchError } from './errors/fetch.error';
 import { HttpTransportService, MIN_INTERVAL_MS } from './http-transport.service';
-import { UA_TOKEN } from './user-agent';
+import { UA_TOKEN } from './utils/user-agent';
 
 interface HostRules {
   /** `null`이면 robots.txt가 없다 = 전부 허용 */
@@ -64,11 +64,11 @@ export class RobotsService {
       const response = await this.transport.request(robotsUrl, minIntervalMs);
       if (response.location !== null) {
         // robots.txt가 리다이렉트되면 종착지를 따라가지 않는다. 규칙을 모르는 상태다
-        throw new CollectError('http', `robots.txt가 리다이렉트된다 — ${robotsUrl.href}`);
+        throw new FetchError('http', `robots.txt가 리다이렉트된다 — ${robotsUrl.href}`);
       }
       body = response.body;
     } catch (error) {
-      if (error instanceof CollectError && isMissing(error)) {
+      if (error instanceof FetchError && isMissing(error)) {
         this.logger.log(`robots.txt 없음 — ${origin}. 전부 허용으로 본다`);
         return { robot: null };
       }
@@ -80,6 +80,6 @@ export class RobotsService {
   }
 }
 
-function isMissing(error: CollectError): boolean {
+function isMissing(error: FetchError): boolean {
   return error.httpStatus === 404 || error.httpStatus === 410;
 }

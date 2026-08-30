@@ -1,4 +1,4 @@
-import { CollectError } from './http.errors';
+import { FetchError } from './errors/fetch.error';
 import { HttpTransportService } from './http-transport.service';
 import { RobotsService } from './robots.service';
 
@@ -47,7 +47,7 @@ describe('RobotsService', () => {
         .catch((error: unknown) => error);
       await jest.advanceTimersByTimeAsync(60_000);
 
-      expect(await pending).toBeInstanceOf(CollectError);
+      expect(await pending).toBeInstanceOf(FetchError);
     } finally {
       jest.useRealTimers();
     }

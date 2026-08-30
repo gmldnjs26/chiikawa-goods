@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { FetcherModule } from '@/modules/_common/fetcher/fetcher.module';
 import { CollectionRun } from '@/modules/collection-runs/entities/collection-run.entity';
-import { HttpModule } from '@/modules/http/http.module';
 import { MentionsModule } from '@/modules/mentions/mentions.module';
 import { Source } from '@/modules/sources/entities/source.entity';
 import { SourcesModule } from '@/modules/sources/sources.module';
@@ -14,7 +14,7 @@ import { SourceLockService } from './source-lock.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Source, CollectionRun]),
-    HttpModule,
+    FetcherModule,
     SourcesModule,
     MentionsModule,
   ],

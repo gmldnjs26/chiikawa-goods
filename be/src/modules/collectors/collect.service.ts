@@ -2,11 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { FetchError } from '@/modules/_common/fetcher/errors/fetch.error';
+import type { FetchErrorKind } from '@/modules/_common/fetcher/errors/fetch-error-kind';
 import {
   CollectionRun,
   FailureKind,
 } from '@/modules/collection-runs/entities/collection-run.entity';
-import { CollectError } from '@/modules/http/http.errors';
 import { MentionStoreService } from '@/modules/mentions/mention-store.service';
 import { Source } from '@/modules/sources/entities/source.entity';
 import { LoadedSource, SourceRegistryService } from '@/modules/sources/source-registry.service';
@@ -107,21 +108,22 @@ export class CollectService {
   }
 
   private async recordFailure(runId: string, row: Source, error: unknown): Promise<void> {
-    const collectError = error instanceof CollectError ? error : null;
-    const failureKind: FailureKind = collectError?.failureKind ?? 'parse';
+    const fetchError = error instanceof FetchError ? error : null;
+    // `_common/`은 도메인을 모른다. 실패 종류를 컬럼 값으로 옮기는 것은 여기 책임이다
+    const failureKind: FailureKind = fetchError === null ? 'parse' : toFailureKind(fetchError.kind);
     const message = error instanceof Error ? error.message : String(error);
 
     await this.runs.update(runId, {
       status: 'failed',
       finishedAt: new Date(),
       failureKind,
-      httpStatus: collectError?.httpStatus ?? null,
+      httpStatus: fetchError?.httpStatus ?? null,
       errorMessage: message.slice(0, 2000),
     });
 
     // 차단당했으면 스스로 내린다 (§4.1). 계속 두드리면 그 소스를 영구히 잃는다.
     // robots.txt가 막은 경로는 여기 해당하지 않는다 — 상대가 우리를 막은 게 아니다
-    if (collectError?.shouldDisableSource === true) {
+    if (fetchError?.shouldDisableSource === true) {
       await this.sources.update(row.id, { enabled: false, disabledReason: message.slice(0, 500) });
       this.logger.error(`${row.code}: 차단 신호로 소스를 내렸다 — ${message}`);
       return;
@@ -170,4 +172,19 @@ export class CollectService {
     if (adapter === undefined) throw new Error(`어댑터가 없다: platform=${platform}`);
     return adapter;
   }
+}
+
+/**
+ * `FetchErrorKind`(전송 층) → `failure_kind`(도메인). 지금은 값이 같지만 **자동으로 같지 않다** —
+ * 한쪽이 늘어나면 여기서 컴파일이 깨진다. 그게 이 함수의 목적이다.
+ */
+function toFailureKind(kind: FetchErrorKind): FailureKind {
+  const map: Record<FetchErrorKind, FailureKind> = {
+    network: 'network',
+    http: 'http',
+    validation: 'validation',
+    parse: 'parse',
+    blocked: 'blocked',
+  };
+  return map[kind];
 }

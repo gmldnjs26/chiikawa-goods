@@ -1,6 +1,6 @@
+import { FetchError } from '../errors/fetch.error';
 import { isBlockSignal, retryAfterMs } from './block-signal';
 import { assertXmlBody, parseJsonBody } from './body-validation';
-import { CollectError } from './http.errors';
 
 describe('본문 검증', () => {
   describe('parseJsonBody', () => {
@@ -16,7 +16,7 @@ describe('본문 검증', () => {
     it('200 + HTML(소프트 404)을 실패로 잡는다', () => {
       expect(() =>
         parseJsonBody('https://example.test/x.json', '<!DOCTYPE html><html>...', ['products']),
-      ).toThrow(CollectError);
+      ).toThrow(FetchError);
     });
 
     it('형식은 JSON이지만 기대 키가 없으면 실패다', () => {
@@ -29,7 +29,7 @@ describe('본문 검증', () => {
         parseJsonBody('https://example.test/x.json', 'nope', []);
         fail('던져야 한다');
       } catch (error) {
-        expect((error as CollectError).failureKind).toBe('validation');
+        expect((error as FetchError).kind).toBe('validation');
       }
     });
   });

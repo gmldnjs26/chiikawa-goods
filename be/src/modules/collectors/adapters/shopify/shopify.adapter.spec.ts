@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { FetcherService } from '@/modules/_common/fetcher/fetcher.service';
 import type { CollectInput } from '@/modules/collectors/collector.contract';
-import { HttpFetcherService } from '@/modules/http/http-fetcher.service';
 import { payloadHash } from '@/modules/mentions/payload-hash';
 import { sourceConfigSchema } from '@/modules/sources/source-config.schema';
 
@@ -15,13 +15,13 @@ function fixture(slug: string, name: string): string {
 }
 
 /** 픽스처를 URL로 돌려주는 가짜 fetcher. 테스트는 네트워크를 쓰지 않는다 */
-function fakeFetcher(routes: Record<string, string>): HttpFetcherService {
+function fakeFetcher(routes: Record<string, string>): FetcherService {
   const fetchText = jest.fn((url: string) => {
     const key = Object.keys(routes).find((pattern) => url.includes(pattern));
     if (key === undefined) throw new Error(`픽스처 없음: ${url}`);
     return Promise.resolve({ url, status: 200, body: routes[key], contentType: null });
   });
-  return { fetchText } as unknown as HttpFetcherService;
+  return { fetchText } as unknown as FetcherService;
 }
 
 const productsPage = (products: unknown[]) => JSON.stringify({ products });
@@ -134,7 +134,7 @@ describe('ShopifyAdapter', () => {
         const body = url.includes('page=1') ? productsPage(page1) : productsPage([{ id: 999, handle: 'x', title: 't', tags: [] }]);
         return Promise.resolve({ url, status: 200, body, contentType: null });
       },
-    } as unknown as HttpFetcherService;
+    } as unknown as FetcherService;
 
     const mentions = await new ShopifyAdapter(service).collect(input());
 

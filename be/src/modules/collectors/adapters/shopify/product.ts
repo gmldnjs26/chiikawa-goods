@@ -1,4 +1,4 @@
-import { parseJsonBody } from '@/modules/http/body-validation';
+import { parseJsonBody } from '@/modules/_common/fetcher/utils/body-validation';
 
 import { keepAllowedFields } from './payload-fields';
 
