@@ -72,7 +72,7 @@ drop      발표 단위 = 유저가 보는 단위 = 알림 단위
 `drop_id` / `title` / `price` / `status` /
 `preorder_at` / `release_at` / `restock_at` / `official_url` / `image_url`
 
-`image_url`은 **원본 링크만** 저장한다. 파일을 가져오지 않는다.
+`image_url`은 **원본 CDN URL만** 저장한다. 파일을 가져오지 않는다 ([[plan]] §2.1).
 
 **분류 필드** — 화면 분류·필터의 근거 ([[plan]] §6.1)
 

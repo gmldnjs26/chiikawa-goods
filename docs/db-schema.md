@@ -203,7 +203,7 @@ CREATE TABLE item (
   title_norm    text NOT NULL,                   -- 정규화 제목 (§9.2 dedupe용)
   canonical_url text UNIQUE,                     -- 소스 간 동일 판정 1순위
   official_url  text NOT NULL,
-  image_url     text,                            -- 링크만. 파일은 갖지 않는다
+  image_url     text,                            -- 원본 CDN URL. 파일은 갖지 않는다 ([[plan]] §2.1)
   price         integer,                -- variant 간 차이가 있으면 최저가
   price_varies  boolean NOT NULL DEFAULT false,
   price_tax_included boolean,          -- 공식 스토어는 true 고정 (표시가 税込)
