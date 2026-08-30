@@ -88,11 +88,17 @@ _common/<인프라>/
 batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
 ```
 
-- **도메인끼리 서로 import하지 않는다.** 엔티티 참조(FK)는 예외 — `@/`로 직접 가리킨다
+- **도메인끼리 호출한다.** 막지 않는다 — NestJS 모듈 시스템(`imports`/`exports`)이
+  그걸 위해 있고, 수집이 소스를 읽고 mention을 저장하는 건 이 제품의 본체 동작이다.
+  provider를 쓰려면 **쓰는 쪽 모듈이 상대 모듈을 `imports`한다.** 전역 모듈을 만들지 않는다
+- **순환은 피한다.** `forwardRef`로 뚫어야 하는 상황이면 경계가 잘못 그어진 것이다.
+  지금 `mentions` → `collectors`(`CollectedMention`) 한 곳이 역방향이다 —
+  `import type`이라 런타임 순환은 없지만 **저장 층이 수집 층을 알 이유는 없다.**
+  건드릴 일이 생기면 저장 층이 자기 입력 형태를 갖는 쪽으로 정리한다
 - `modules/`는 `batch/`를 모른다. 수집 잡이 도메인을 쓰는 방향만 있다
 - **어댑터는 도메인이다.** `modules/collectors/`에 산다 — `batch/`가 아니다.
   경계는 **"무엇을 긁는가"(도메인) vs "언제·어떻게 돌리는가"(잡)**다.
-  `pg_advisory_lock` · `collection_run` 기록 · `skipped_idle` 게이트 · 소스 단위 실패 격리는
+  `pg_advisory_lock` · `collection_run` 기록 · 주기 게이트 · 소스 단위 실패 격리는
   전부 잡 쪽이고, 어댑터는 그걸 모른다. 수집이 이 제품의 본체이므로 `batch/`에 두면
   레이어가 뒤집힌다 — 1회성 임포트 잡과 다르다
 - **`_common/`은 특정 도메인을 모른다**
