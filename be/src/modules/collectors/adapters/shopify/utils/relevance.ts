@@ -1,5 +1,5 @@
 import type { Relevance } from '@/modules/mentions/entities/mention.entity';
-import type { SourceConfig } from '@/modules/sources/source-config.schema';
+import type { SourceConfig } from '@/modules/sources/dto/source-config.schema';
 
 export interface RelevanceInput {
   readonly tags: string[];

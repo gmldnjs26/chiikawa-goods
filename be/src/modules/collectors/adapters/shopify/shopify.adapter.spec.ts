@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { FetcherService } from '@/modules/_common/fetcher/fetcher.service';
-import type { CollectInput } from '@/modules/collectors/collector.contract';
-import { payloadHash } from '@/modules/mentions/payload-hash';
-import { sourceConfigSchema } from '@/modules/sources/source-config.schema';
+import type { CollectInput } from '@/modules/collectors/dto/collect-input.dto';
+import { payloadHash } from '@/modules/mentions/utils/payload-hash';
+import { sourceConfigSchema } from '@/modules/sources/dto/source-config.schema';
 
 import { ShopifyAdapter } from './shopify.adapter';
 

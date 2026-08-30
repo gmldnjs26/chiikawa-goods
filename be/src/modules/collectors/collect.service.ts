@@ -13,7 +13,7 @@ import { Source } from '@/modules/sources/entities/source.entity';
 import { LoadedSource, SourceRegistryService } from '@/modules/sources/source-registry.service';
 
 import { ShopifyAdapter } from './adapters/shopify/shopify.adapter';
-import { CollectorAdapter } from './collector.contract';
+import { CollectorAdapter } from './interfaces/collector-adapter.interface';
 import { SourceLockService } from './source-lock.service';
 
 /**

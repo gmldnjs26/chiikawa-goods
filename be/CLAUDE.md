@@ -47,13 +47,21 @@ be/src/
 │   ├── _common/            도메인 없는 공유물
 │   │   └── <인프라>/       provider를 갖는 공유 모듈은 역할별로 나눈다 (아래)
 │   └── <도메인>/
-│       ├── entities/*.entity.ts
-│       ├── *.service.ts
+│       ├── entities/*.entity.ts      테이블
+│       ├── dto/*.dto.ts             오가는 형태 · 경계 스키마
+│       ├── interfaces/*.interface.ts 계약
+│       ├── utils/                    상태 없는 순수 함수
+│       ├── *.service.ts              provider. 평면
 │       └── <도메인>.module.ts
 └── batch/<잡>/             nest-commander 배치 잡. 락 · 실행 기록 · 게이트 · 순회
 ```
 
-- **엔티티는 도메인 모듈 안에 둔다.** `database/entities/` 같은 **레이어 분할을 하지 않는다**
+- **엔티티는 도메인 모듈 안에 둔다.** `database/entities/` 같은 **전역 레이어 분할을 하지 않는다**.
+  나누는 건 **모듈 안에서**다
+- **디렉토리는 내용이 생길 때 만든다.** 엔티티만 있는 도메인은 `entities/`만 있으면 된다.
+  빈 `dto/`를 미리 파두지 않는다
+- **`*.service.ts`는 평면에 둔다.** `services/`로 한 겹 더 넣지 않는다 — 모듈의 본체이고,
+  파일 이름에 이미 역할이 있다
 - 디렉토리명은 **복수**, 테이블명은 **단수** (`modules/sources/` ↔ `source`)
 - **빈 `.module.ts`를 미리 만들지 않는다.** provider가 생길 때 만든다.
   엔티티만 있는 도메인은 `entities/`만 있으면 된다

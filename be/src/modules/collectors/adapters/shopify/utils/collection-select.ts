@@ -1,4 +1,6 @@
-import type { SourceConfig } from '@/modules/sources/source-config.schema';
+import type { SourceConfig } from '@/modules/sources/dto/source-config.schema';
+
+import type { Selection } from '../dto/collection-selection.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -15,12 +17,6 @@ interface DatedHandle {
  * 실측에서 컬렉션이 1006개였다. 전부 도는 것은 불가능하고 상대에게도 무례하다.
  * 규칙은 전부 `config`에 있다 — 정규식을 여기에 박으면 소스마다 코드가 갈린다.
  */
-export interface Selection {
-  readonly handles: string[];
-  /** 상한에 걸려 이번 실행에서 뺀 것. 0이 아니면 호출부가 로그로 남긴다 */
-  readonly dropped: number;
-}
-
 export function selectCollections(handles: string[], config: SourceConfig, now: Date): Selection {
   const rule = config.poll_collections;
   const available = new Set(handles);

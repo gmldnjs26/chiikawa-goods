@@ -1,17 +1,11 @@
 import { parseJsonBody } from '@/modules/_common/fetcher/utils/body-validation';
 
+import type { ShopifyProduct } from '../dto/shopify-product.dto';
 import { keepAllowedFields } from './payload-fields';
 
 /** `products.json` 1페이지 상한. 250건이 오면 "끝"이 아니라 "다음 페이지"다 */
 export const PAGE_SIZE = 250;
 
-export interface ShopifyProduct {
-  readonly id: number;
-  readonly handle: string;
-  readonly title: string;
-  readonly tags?: string[];
-  readonly [key: string]: unknown;
-}
 
 /**
  * 응답 검증 + 파싱 (docs/data-collection-design.md §7).

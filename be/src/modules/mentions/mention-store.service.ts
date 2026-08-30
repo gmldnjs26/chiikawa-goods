@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import type { CollectedMention } from '@/modules/collectors/collector.contract';
+import type { CollectedMention } from '@/modules/collectors/dto/collected-mention.dto';
 
 import { Mention } from './entities/mention.entity';
-import { payloadHash } from './payload-hash';
+import { payloadHash } from './utils/payload-hash';
 
 export interface StoreResult {
   readonly total: number;

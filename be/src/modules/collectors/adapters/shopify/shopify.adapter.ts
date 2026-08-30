@@ -1,16 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { FetcherService } from '@/modules/_common/fetcher/fetcher.service';
-import type {
-  CollectedMention,
-  CollectInput,
-  CollectorAdapter,
-} from '@/modules/collectors/collector.contract';
+import type { CollectInput } from '@/modules/collectors/dto/collect-input.dto';
+import type { CollectedMention } from '@/modules/collectors/dto/collected-mention.dto';
+import type { CollectorAdapter } from '@/modules/collectors/interfaces/collector-adapter.interface';
 
-import { selectCollections } from './collection-select';
-import { hasNextPage, PAGE_SIZE, parseProductsPage, ShopifyProduct } from './product';
-import { judgeRelevance } from './relevance';
-import { extractCollectionHandles, pickCollectionSitemaps } from './sitemap';
+import type { ShopifyProduct } from './dto/shopify-product.dto';
+import { selectCollections } from './utils/collection-select';
+import { hasNextPage, PAGE_SIZE, parseProductsPage } from './utils/products-page';
+import { judgeRelevance } from './utils/relevance';
+import { extractCollectionHandles, pickCollectionSitemaps } from './utils/sitemap';
 
 /** 컬렉션 하나가 이 이상 페이지를 넘기면 규칙이 잘못된 것이다. 무한 루프를 막는다 */
 const MAX_PAGES = 20;

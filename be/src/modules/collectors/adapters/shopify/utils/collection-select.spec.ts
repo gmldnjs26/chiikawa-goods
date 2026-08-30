@@ -1,4 +1,4 @@
-import { sourceConfigSchema } from '@/modules/sources/source-config.schema';
+import { sourceConfigSchema } from '@/modules/sources/dto/source-config.schema';
 
 import { selectCollections } from './collection-select';
 
