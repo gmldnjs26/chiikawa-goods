@@ -2,8 +2,8 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { type SourceConfig,sourceConfigSchema } from './dto/source-config.schema';
 import { Source } from './entities/source.entity';
-import { type SourceConfig,sourceConfigSchema } from './source-config.schema';
 
 /** `config`까지 파싱이 끝난 소스. 수집 코드는 이 형태만 본다 */
 export interface LoadedSource {

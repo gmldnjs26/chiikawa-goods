@@ -39,6 +39,8 @@
 | DB 드라이버 | `pg` | 표준 Postgres |
 | snake_case | `typeorm-naming-strategy` | `tomomachi`의 `typeorm-naming-strategies`(복수형)는 TypeORM 1을 못 받는다 → §1.5 |
 | 검증 | `class-validator` + `class-transformer` | `tomomachi` 동일 |
+| `robots.txt` 해석 | `robots-parser` | **직접 짜지 않는다.** 경로 매칭을 틀리면 금지 경로를 때리고 소스를 영구히 잃는다 → §5 |
+| XML 파싱 | `fast-xml-parser` | sitemap 인덱스. 정규식으로 `<loc>`을 긁으면 소프트 404 HTML도 통과한다 ([[data-collection-design]] §7) |
 | 로깅 | `winston` + `nest-winston` | **`winston-daily-rotate-file` 제외** (§1.6) |
 | 테스트 | Jest + `ts-jest` | `tomomachi` 동일 |
 | 린트 | ESLint 9 + Prettier + `simple-import-sort` | **9에 머문다. 상한 근거는 §1.4** |
@@ -266,7 +268,7 @@ Cloud SQL은 `/cloudsql` **Unix 소켓 마운트**, 외부 Postgres는 **TCP + T
 | `mention.raw_payload` | **90일 후 삭제** (잠정) |
 | 저장 조건 | **내용 해시 비교. 무변경이면 저장하지 않음** |
 
-30분 폴링은 대부분 무변경이므로 해시 비교만으로 대부분 줄어든다.
+1시간 폴링은 대부분 무변경이므로 해시 비교만으로 대부분 줄어든다.
 90일은 운용 1개월 후 실측 증가율로 조정한다.
 
 ### 2.8 화면은 DB를 직접 읽지 않는다. 읽기 API를 거친다
@@ -339,7 +341,7 @@ API를 끼우면 자격증명이 **비공개 서비스에만** 남는다.
 | 2b | Scheduler가 `oauth_token`으로 Admin API에 붙는지 (OIDC 아님) | §2.2의 B안으로 변경 |
 | 2c | Scheduler job 개수와 무료 한도 (현재 설계 4개) | 초과 시 job당 소액 과금 |
 | 3 | Cloud Run Job에서 `/cloudsql` 소켓 마운트로 Postgres 접속 | `tomomachi` 선례 있으므로 낮은 리스크 |
-| 4 | `db-f1-micro`가 30분 폴링 부하를 감당하는지 | 사양 상향 = 고정비 증가 |
+| 4 | `db-f1-micro`가 1시간 폴링 부하를 감당하는지 | 사양 상향 = 고정비 증가 |
 
 ### 4.1 중복 실행은 스케줄러를 바꿔도 남는다
 
@@ -370,6 +372,12 @@ API를 끼우면 자격증명이 **비공개 서비스에만** 남는다.
 | Cloud Storage 이미지 캐싱 | 저작물. 링크아웃만 ([[plan]] §1.4) |
 | `@nestjs/swagger` | 읽기 API의 소비자가 `fe/` 하나뿐이다. 스키마는 zod로 `fe/` 경계에서 검증한다 (§2.8) |
 | repo 분할 | 개인 규모에 오버헤드 (§2.5) |
+| `robots.txt` 매처 자체 구현 | 와일드카드·`$`·최장일치 규칙이 미묘하다. 틀린 허용은 되돌릴 수 없다 (§1.1) |
+| `crawlee` | **요청 큐·결과를 로컬 파일에 쓴다**(`./storage`). Cloud Run Job은 컨테이너가 매번 죽어 그 상태가 남지 않고, 우리는 이미 DB가 그 역할을 한다(`collection_run`·`pg_advisory_lock`·`mention`) → **상태 저장소가 둘이 된다.** 본체 기능인 브라우저 크롤링도 우리가 안 쓴다(CSR 우회 금지) |
+| `nest-crawler` | **2022-05 이후 방치**(v1.9.0). NestJS 11을 받지 못한다 |
+| `p-queue` | ESM 전용. 현재 빌드가 CommonJS다 |
+| `@nestjs/throttler` | **들어오는** 요청을 제한한다. 우리가 필요한 건 **나가는** 쪽이다 |
+| `axios` / `got` | Node 24 내장 `fetch`로 충분하다. 재시도·간격은 어차피 우리가 감싼다 |
 
 ---
 

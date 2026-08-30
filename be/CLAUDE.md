@@ -45,18 +45,50 @@ be/src/
 ├── migrations/             migration. 평면. 하위 디렉토리 없음
 ├── modules/
 │   ├── _common/            도메인 없는 공유물
+│   │   └── <인프라>/       provider를 갖는 공유 모듈은 역할별로 나눈다 (아래)
 │   └── <도메인>/
-│       ├── entities/*.entity.ts
-│       ├── *.service.ts
+│       ├── entities/*.entity.ts      테이블
+│       ├── dto/*.dto.ts             오가는 형태 · 경계 스키마
+│       ├── interfaces/*.interface.ts 계약
+│       ├── utils/                    상태 없는 순수 함수
+│       ├── *.service.ts              provider. 평면
 │       └── <도메인>.module.ts
 └── batch/<잡>/             nest-commander 배치 잡. 락 · 실행 기록 · 게이트 · 순회
 ```
 
-- **엔티티는 도메인 모듈 안에 둔다.** `database/entities/` 같은 **레이어 분할을 하지 않는다**
+- **엔티티는 도메인 모듈 안에 둔다.** `database/entities/` 같은 **전역 레이어 분할을 하지 않는다**.
+  나누는 건 **모듈 안에서**다
+- **디렉토리는 내용이 생길 때 만든다.** 엔티티만 있는 도메인은 `entities/`만 있으면 된다.
+  빈 `dto/`를 미리 파두지 않는다
+- **`*.service.ts`는 평면에 둔다.** `services/`로 한 겹 더 넣지 않는다 — 모듈의 본체이고,
+  파일 이름에 이미 역할이 있다
 - 디렉토리명은 **복수**, 테이블명은 **단수** (`modules/sources/` ↔ `source`)
 - **빈 `.module.ts`를 미리 만들지 않는다.** provider가 생길 때 만든다.
   엔티티만 있는 도메인은 `entities/`만 있으면 된다
 - `TypeOrmModule.forFeature`는 **쓰는 모듈이** 등록한다. 전역 레포 모듈을 만들지 않는다
+
+### `_common/` 아래 인프라 모듈
+
+도메인이 아니라 **기술적 관심사**를 담는 모듈이다 (`_common/fetcher/` = 외부 요청).
+파일이 10개를 넘으면 **역할별로** 나눈다. 도메인 모듈의 평면 배치와 다르다.
+
+```
+_common/<인프라>/
+├── dto/           입출력 형태. `*.dto.ts`
+├── errors/        예외와 그 종류. `*.error.ts`
+├── utils/         상태 없는 순수 함수 · 작은 클래스
+├── *.service.ts   provider
+└── <이름>.module.ts
+```
+
+- **`controller/`도 `entities/`도 없다.** 라우트가 없고(진입점이 CLI다 §1) 테이블도 없다.
+  읽기 API를 만들 때 그쪽 모듈에 `controller`·`dto`가 생긴다
+- **`dto/`는 클래스가 아니라 `interface`다.** `class-validator`는 HTTP 요청 본문을 검증할 때
+  쓴다. 여기 값은 우리가 만들어 넘기는 것이라 검증할 경계가 아니다
+- **`_common/`은 특정 도메인을 모른다.** 도메인 타입을 import하면 의존 방향이 뒤집힌다.
+  자체 타입을 정의하고 **도메인 쪽이 옮긴다** (`FetchErrorKind` → `failure_kind` 변환은
+  `collect.service.ts`에 있다). 매핑을 `Record<A, B>`로 두면 한쪽이 늘 때 컴파일이 깨진다
+- **NestJS 내장과 이름이 겹치지 않게 한다.** `HttpModule`은 `@nestjs/axios`가 쓴다
 
 ### 의존 방향
 
@@ -64,11 +96,17 @@ be/src/
 batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
 ```
 
-- **도메인끼리 서로 import하지 않는다.** 엔티티 참조(FK)는 예외 — `@/`로 직접 가리킨다
+- **도메인끼리 호출한다.** 막지 않는다 — NestJS 모듈 시스템(`imports`/`exports`)이
+  그걸 위해 있고, 수집이 소스를 읽고 mention을 저장하는 건 이 제품의 본체 동작이다.
+  provider를 쓰려면 **쓰는 쪽 모듈이 상대 모듈을 `imports`한다.** 전역 모듈을 만들지 않는다
+- **순환은 피한다.** `forwardRef`로 뚫어야 하는 상황이면 경계가 잘못 그어진 것이다.
+  지금 `mentions` → `collectors`(`CollectedMention`) 한 곳이 역방향이다 —
+  `import type`이라 런타임 순환은 없지만 **저장 층이 수집 층을 알 이유는 없다.**
+  건드릴 일이 생기면 저장 층이 자기 입력 형태를 갖는 쪽으로 정리한다
 - `modules/`는 `batch/`를 모른다. 수집 잡이 도메인을 쓰는 방향만 있다
 - **어댑터는 도메인이다.** `modules/collectors/`에 산다 — `batch/`가 아니다.
   경계는 **"무엇을 긁는가"(도메인) vs "언제·어떻게 돌리는가"(잡)**다.
-  `pg_advisory_lock` · `collection_run` 기록 · `skipped_idle` 게이트 · 소스 단위 실패 격리는
+  `pg_advisory_lock` · `collection_run` 기록 · 주기 게이트 · 소스 단위 실패 격리는
   전부 잡 쪽이고, 어댑터는 그걸 모른다. 수집이 이 제품의 본체이므로 `batch/`에 두면
   레이어가 뒤집힌다 — 1회성 임포트 잡과 다르다
 - **`_common/`은 특정 도메인을 모른다**

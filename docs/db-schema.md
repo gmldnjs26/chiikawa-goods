@@ -100,7 +100,7 @@ CREATE TABLE collection_run (
   source_id     bigint NOT NULL REFERENCES source(id),
   started_at    timestamptz NOT NULL DEFAULT now(),
   finished_at   timestamptz,
-  status        text NOT NULL,        -- CHECK: running|success|failed|skipped_locked|skipped_idle
+  status        text NOT NULL,        -- CHECK: running|success|failed|skipped_locked|skipped_idle|skipped_interval
   mention_count integer NOT NULL DEFAULT 0,
   new_count     integer NOT NULL DEFAULT 0,
   excluded_count integer NOT NULL DEFAULT 0,   -- 관련성 필터로 제외한 건수
@@ -124,6 +124,7 @@ CREATE INDEX ON collection_run (source_id, started_at DESC);
 | 값 | 의미 |
 | --- | --- |
 | `skipped_idle` | 창구 폴링인데 오늘 예정이 없어 외부 요청 없이 종료 |
+| `skipped_interval` | 마지막 성공에서 `interval_sec`이 안 지나 종료. **자주 나오면 스케줄러가 과발화한다** ([[data-collection-design]] §6.1.1) |
 | `skipped_locked` | 앞선 실행이 아직 돌고 있어 종료. **자주 나오면 주기가 너무 짧다** |
 
 `failure_kind`에 **`validation`이 따로 있다.** 본문 검증 실패(소프트 404)는 성공이 아니라 실패다
