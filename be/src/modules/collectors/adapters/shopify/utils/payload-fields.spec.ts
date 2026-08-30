@@ -32,13 +32,13 @@ describe('keepAllowedFields', () => {
     expect(kept.images).toEqual([{ src: 'https://cdn.shopify.com/1.jpg' }]);
   });
 
-  // images[].updated_at은 요청마다 바뀐다. 남기면 payload_hash가 매번 달라진다
-  it('이미지의 alt·치수·타임스탬프는 버린다', () => {
-    const kept = keepAllowedFields(product);
+  // images[].updated_at은 요청마다 바뀐다. 남기면 payload_hash가 매번 달라진다.
+  // 문자열 전체를 훑으면 안 된다 — updated_at은 상품 레벨에서는 남기는 필드라
+  // 픽스처가 그걸 갖는 순간 이미지와 무관한 이유로 깨진다. 이미지 객체만 본다
+  it('이미지 객체에 src 외의 키를 남기지 않는다', () => {
+    const [image] = keepAllowedFields(product).images as Record<string, unknown>[];
 
-    expect(JSON.stringify(kept)).not.toContain('상품 설명 텍스트');
-    expect(JSON.stringify(kept)).not.toContain('updated_at');
-    expect(JSON.stringify(kept)).not.toContain('800');
+    expect(Object.keys(image)).toEqual(['src']);
   });
 
   it('이미지가 없으면 키 자체를 만들지 않는다', () => {
