@@ -38,6 +38,20 @@ export class SourceRegistryService implements OnModuleInit {
     return this.loaded;
   }
 
+  /**
+   * `enabled`와 무관하게 전부 읽는다.
+   *
+   * **`enabled`는 「외부 요청을 보낼 것인가」다.** 이미 DB에 있는 `mention`을 정규화하는 데는
+   * 요청이 0건이므로 이 게이트가 걸릴 이유가 없다. 걸어 두면 ToS 문의 대기로
+   * `enabled=false`인 3소스의 mention이 영영 `item`이 되지 못한다 — 화면을 만들 데이터가 없어진다.
+   *
+   * 공개 여부의 게이트는 여기가 아니라 [[plan]] §8.1이다.
+   */
+  async loadAll(): Promise<LoadedSource[]> {
+    const rows = await this.sources.find();
+    return rows.map((row) => ({ row, config: parseConfig(row) }));
+  }
+
   all(): LoadedSource[] {
     return this.loaded;
   }

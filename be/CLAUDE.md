@@ -197,6 +197,17 @@ cat be/node_modules/typeorm/decorator/columns/PrimaryGeneratedColumn.d.ts
 - **진단 커맨드에 우회 플래그를 만들지 않는다.** `cli health`는 깨진 `config` 행이 있으면 죽는다.
   §4대로 동작하는 것이고, 그 비용을 받는다 — 깨진 행은 `psql`로 본다
 
-## 7. 미결정
+## 7. `enabled`는 「외부 요청을 보낼 것인가」다
+
+`source.enabled=false`가 막는 것은 **네트워크로 나가는 일**뿐이다.
+이미 DB에 있는 `mention`을 `item`으로 정규화하는 데는 요청이 0건이므로 이 게이트가 걸리지 않는다.
+
+- 수집 경로는 `SourceRegistryService.load()` — `enabled=true`만
+- 정규화 경로는 `loadAll()` — 전부
+
+걸어 두면 ToS 문의 대기로 `enabled=false`인 소스의 mention이 영영 `item`이 되지 못하고,
+화면을 만들 데이터가 사라진다. **공개 여부의 게이트는 코드가 아니라 `docs/plan.md` §8.1이다.**
+
+## 8. 미결정
 
 현재 없음.

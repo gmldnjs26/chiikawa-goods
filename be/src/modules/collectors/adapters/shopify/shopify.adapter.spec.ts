@@ -141,4 +141,37 @@ describe('ShopifyAdapter', () => {
     expect(mentions).toHaveLength(251);
     expect(fetcher.mock.calls.some(([url]: [string]) => url.includes('page=2'))).toBe(true);
   });
+
+  // docs/source-mapping.md §7.3 — 복구 경로는 「규칙을 고쳐 excluded를 재처리」다.
+  // 태그와 컬렉션이 없으면 재처리할 수 없다. NULL이 아니라 축소다
+  it('excluded는 payload를 줄이되 재처리에 필요한 것은 남긴다', async () => {
+    const nagano = sourceConfigSchema.parse({
+      poll_collections: { always: ['newitems'] },
+      relevance_filter: { include_tags: ['ちいかわ'] },
+    });
+    const fetcher = fakeFetcher({
+      '/sitemap.xml': fixture('chiikawamarket', 'sitemap.xml'),
+      sitemap_collections: fixture('chiikawamarket', 'sitemap_collections.xml'),
+      '/collections/newitems/products.json': productsPage([
+        {
+          id: 1,
+          handle: 'h',
+          title: 'ナガノのくま マスコット',
+          tags: ['パグ'],
+          vendor: 'v',
+          images: [{ src: 'https://cdn.shopify.com/x.jpg' }],
+          variants: [{ id: 2, price: '990', available: true }],
+        },
+      ]),
+    });
+
+    const [mention] = await new ShopifyAdapter(fetcher).collect(input({ config: nagano }));
+
+    expect(mention.relevance).toBe('excluded');
+    expect(mention.rawPayload).toEqual({ tags: ['パグ'], _collections: ['newitems'] });
+    // 제목과 URL은 컬럼에 있다. payload에 중복해서 들고 있을 이유가 없다
+    expect(mention.rawTitle).toBe('ナガノのくま マスコット');
+    expect(mention.rawPayload).not.toHaveProperty('variants');
+    expect(mention.rawPayload).not.toHaveProperty('images');
+  });
 });

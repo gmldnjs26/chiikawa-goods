@@ -504,7 +504,7 @@ SELECT item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
 | 2 | `brand` 초기 목록과 `match_rules` 값 | 태그 기반으로 판정 가능함은 확인됨. 목록 자체는 미확정 |
 | 3 | 편의점·프라이즈 소스의 세금 표기 | 공식 스토어는 `税込` 확정. 다른 소스는 미확인 |
 | 4 | `category`(product_type) 값 정규화 여부 | 원문 그대로 둘지, 소수 카테고리로 매핑할지 |
-| 5 | 캐릭터 룩업 테이블 (`character`) | [[source-mapping]] §6의 `label_tag_source: "character_table"`이 참조하는데 §13 마이그레이션 순서에 없다. 라벨 판정(에픽 C)에서 필요해진다 — 그때 순서 몇 번에 넣을지 미정 |
+| 5 | 캐릭터 룩업 테이블 (`character`) | **에픽 C에서 만들지 않기로 했다** (2026-09-04). `label_tag_source: 'character_table'`은 참조 대상이 없으면 **캐릭터 라벨을 비운다** — 칩이 안 나올 뿐 오분류는 없다([[source-mapping]] §7.1). 목록을 정할 근거가 아직 없어 지금 만들면 추측이 된다. `labels`는 `label_tags` + `label_tags_extra`로만 채운다 |
 
 **해소됨** — `region`(도시 단위) · `drop_group` 묶음 기준(§6) · `sale_final`(제거) ·
 공식 스토어 `price_tax_included`(true 고정).

@@ -100,6 +100,8 @@ export class ShopifyAdapter implements CollectorAdapter {
     // 순회 순서는 보장되지 않는다. 정렬하지 않으면 무변경인데도 해시가 흔들린다
     const sorted = [...new Set(collections)].sort();
 
+    const relevance = judgeRelevance({ tags, collections: sorted }, input.config);
+
     return {
       // `handle`이 아니다 — handle은 바뀔 수 있다
       externalId: String(product.id),
@@ -107,8 +109,14 @@ export class ShopifyAdapter implements CollectorAdapter {
       rawTitle: product.title,
       // 걸러내기는 `parseProductsPage`에서 이미 끝났다 (payload-fields.ts).
       // 여기서 또 부르지 않는다 — 두 곳에 두면 한쪽이 사라져도 안 울린다
-      rawPayload: { ...product, _collections: sorted },
-      relevance: judgeRelevance({ tags, collections: sorted }, input.config),
+      rawPayload:
+        relevance === 'excluded'
+          ? // 제외분은 줄여서 남긴다 (docs/source-mapping.md §7.3). 용량 때문이지만
+            // NULL로 만들지는 않는다 — 규칙을 고쳐 재처리하는 것이 유일한 복구 경로이고,
+            // 재처리에 필요한 것이 태그와 컬렉션이다. 제목·URL은 이미 컬럼에 있다
+            { tags, _collections: sorted }
+          : { ...product, _collections: sorted },
+      relevance,
     };
   }
 }
