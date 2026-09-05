@@ -4,7 +4,7 @@ import { toPatterns } from '@/modules/sources/dto/source-config.schema';
 import type { NormalizedItem } from '../dto/normalized-item.dto';
 import type { Acquisition, Channel, ItemStatus } from '../entities/item.entity';
 import { latestTagDate, matchTagDates } from './tag-date';
-import { normalizeTitle, parseSeriesTotal } from './title-norm';
+import { normalizeTitle, parseSeriesTotal } from './title-normalize';
 
 /** `mention.raw_payload`가 갖는 형태. 화이트리스트를 통과한 것만 온다 */
 interface PayloadVariant {

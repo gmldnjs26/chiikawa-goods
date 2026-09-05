@@ -1,4 +1,4 @@
-import { normalizeTitle, parseSeriesTotal, toHalfWidth } from './title-norm';
+import { normalizeTitle, parseSeriesTotal, toHalfWidth } from './title-normalize';
 
 describe('toHalfWidth', () => {
   it('전각 영숫자와 공백만 바꾼다', () => {

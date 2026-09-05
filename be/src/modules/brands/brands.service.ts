@@ -15,8 +15,8 @@ import { BrandCandidate, parseMatchRules } from './utils/match-rules';
  * 후보가 0개면 전부 미판정이고, 화면에는 `その他`로 나온다.
  */
 @Injectable()
-export class BrandRegistryService {
-  private readonly logger = new Logger(BrandRegistryService.name);
+export class BrandsService {
+  private readonly logger = new Logger(BrandsService.name);
 
   constructor(@InjectRepository(Brand) private readonly brands: Repository<Brand>) {}
 

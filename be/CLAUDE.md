@@ -60,6 +60,15 @@ be/src/
   나누는 건 **모듈 안에서**다
 - **디렉토리는 내용이 생길 때 만든다.** 엔티티만 있는 도메인은 `entities/`만 있으면 된다.
   빈 `dto/`를 미리 파두지 않는다
+- **모듈을 가르는 기준은 「이 개념이 무엇의 것인가」다.** 테이블이 어느 쪽 FK를 갖느냐가 아니다.
+  - N:N 관계 테이블은 **관계 자체가 도메인**이다. 양쪽 어디에도 두지 않는다 —
+    `item_mention`은 `items/`가 아니라 `item-mentions/`다. 양쪽을 아는 것은 관계 모듈뿐이다
+  - 한 모듈이 다른 도메인의 엔티티를 **쓰기 시작**하면 경계를 의심한다. 읽기는 괜찮다
+  - 서비스가 하나면 **도메인명**(`items.service.ts`), 둘 이상이면 **역할명**
+    (`mentions.service.ts` + `payload-purge.service.ts`). 역할명이 붙는다는 것은
+    그 일이 도메인 본체가 아니라는 뜻이고, 커지면 모듈로 뺀다
+- **파일명을 줄이지 않는다.** `title-norm`이 아니라 `title-normalize`, `payload-fields`가
+  아니라 `payload-whitelist`. 줄임말은 읽는 사람이 풀어야 한다
 - **`*.service.ts`는 평면에 둔다.** `services/`로 한 겹 더 넣지 않는다 — 모듈의 본체이고,
   파일 이름에 이미 역할이 있다
 - 디렉토리명은 **복수**, 테이블명은 **단수** (`modules/sources/` ↔ `source`)
@@ -206,7 +215,10 @@ cat be/node_modules/typeorm/decorator/columns/PrimaryGeneratedColumn.d.ts
 - 정규화 경로는 `loadAll()` — 전부
 
 걸어 두면 ToS 문의 대기로 `enabled=false`인 소스의 mention이 영영 `item`이 되지 못하고,
-화면을 만들 데이터가 사라진다. **공개 여부의 게이트는 코드가 아니라 `docs/plan.md` §8.1이다.**
+화면을 만들 데이터가 사라진다.
+
+**게시 게이트는 따로 있다** — `docs/plan.md` §8.1 「소스별 게시 허가」. 읽기 API(에픽 E)가
+회신 있는 소스의 `item`만 낸다. `item` 테이블에 있다고 화면에 나오는 것이 아니다.
 
 ## 8. 미결정
 

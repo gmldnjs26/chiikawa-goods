@@ -1,6 +1,6 @@
 import { Command, CommandRunner, Option } from 'nest-commander';
 
-import { ItemPromoteService } from '@/modules/items/item-promote.service';
+import { ItemsService } from '@/modules/items/items.service';
 
 interface NormalizeOptions {
   source?: string;
@@ -14,7 +14,7 @@ interface NormalizeOptions {
  */
 @Command({ name: 'normalize', description: 'mention을 item으로 승격한다' })
 export class NormalizeCommand extends CommandRunner {
-  constructor(private readonly promote: ItemPromoteService) {
+  constructor(private readonly promote: ItemsService) {
     super();
   }
 

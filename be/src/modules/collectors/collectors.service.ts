@@ -8,9 +8,9 @@ import {
   CollectionRun,
   FailureKind,
 } from '@/modules/collection-runs/entities/collection-run.entity';
-import { MentionStoreService } from '@/modules/mentions/mention-store.service';
+import { MentionsService } from '@/modules/mentions/mentions.service';
 import { Source } from '@/modules/sources/entities/source.entity';
-import { LoadedSource, SourceRegistryService } from '@/modules/sources/source-registry.service';
+import { LoadedSource, SourcesService } from '@/modules/sources/sources.service';
 
 import { ShopifyAdapter } from './adapters/shopify/shopify.adapter';
 import { CollectorAdapter } from './interfaces/collector-adapter.interface';
@@ -23,14 +23,14 @@ import { SourceLockService } from './source-lock.service';
  * 어댑터는 던지고, 판단은 여기서 한다.
  */
 @Injectable()
-export class CollectService {
-  private readonly logger = new Logger(CollectService.name);
+export class CollectorsService {
+  private readonly logger = new Logger(CollectorsService.name);
   private readonly adapters: CollectorAdapter[];
 
   constructor(
-    private readonly registry: SourceRegistryService,
+    private readonly registry: SourcesService,
     private readonly lock: SourceLockService,
-    private readonly store: MentionStoreService,
+    private readonly store: MentionsService,
     @InjectRepository(Source) private readonly sources: Repository<Source>,
     @InjectRepository(CollectionRun) private readonly runs: Repository<CollectionRun>,
     shopify: ShopifyAdapter,

@@ -3,20 +3,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { BrandsModule } from '@/modules/brands/brands.module';
 import { DropGroup } from '@/modules/drop-groups/entities/drop-group.entity';
+import { ItemMentionsModule } from '@/modules/item-mentions/item-mentions.module';
 import { Mention } from '@/modules/mentions/entities/mention.entity';
 import { SourcesModule } from '@/modules/sources/sources.module';
 
 import { Item } from './entities/item.entity';
-import { ItemMention } from './entities/item-mention.entity';
-import { ItemPromoteService } from './item-promote.service';
+import { ItemsService } from './items.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Item, ItemMention, DropGroup, Mention]),
+    TypeOrmModule.forFeature([Item, DropGroup, Mention]),
     SourcesModule,
     BrandsModule,
+    ItemMentionsModule,
   ],
-  providers: [ItemPromoteService],
-  exports: [ItemPromoteService],
+  providers: [ItemsService],
+  exports: [ItemsService],
 })
 export class ItemsModule {}

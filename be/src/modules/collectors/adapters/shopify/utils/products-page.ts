@@ -1,7 +1,7 @@
 import { parseJsonBody } from '@/modules/_common/fetcher/utils/body-validation';
 
 import type { ShopifyProduct } from '../dto/shopify-product.dto';
-import { keepAllowedFields } from './payload-fields';
+import { keepAllowedFields } from './payload-whitelist';
 
 /** `products.json` 1페이지 상한. 250건이 오면 "끝"이 아니라 "다음 페이지"다 */
 export const PAGE_SIZE = 250;

@@ -19,7 +19,7 @@ export interface LoadedSource {
  * 어댑터 안에서 늦게 파싱하면 요건을 위반하면서 맞는 것처럼 보인다.
  */
 @Injectable()
-export class SourceRegistryService implements OnModuleInit {
+export class SourcesService implements OnModuleInit {
   private loaded: LoadedSource[] = [];
 
   constructor(

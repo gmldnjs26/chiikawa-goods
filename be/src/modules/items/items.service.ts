@@ -2,15 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { BrandRegistryService } from '@/modules/brands/brand-registry.service';
+import { BrandsService } from '@/modules/brands/brands.service';
 import { judgeBrand } from '@/modules/brands/utils/match-rules';
 import { DropGroup } from '@/modules/drop-groups/entities/drop-group.entity';
 import { groupByDate } from '@/modules/drop-groups/utils/grouping';
+import { ItemMentionsService } from '@/modules/item-mentions/item-mentions.service';
 import { Mention } from '@/modules/mentions/entities/mention.entity';
-import { SourceRegistryService } from '@/modules/sources/source-registry.service';
+import { SourcesService } from '@/modules/sources/sources.service';
 
 import { Channel, Item } from './entities/item.entity';
-import { ItemMention } from './entities/item-mention.entity';
 import { normalize } from './utils/normalize';
 
 export interface PromoteResult {
@@ -30,23 +30,23 @@ export interface PromoteResult {
  * 승격 대상은 `included` + `mixed`다. `mixed`는 수록하되 라벨을 붙인다 (§7.1).
  */
 @Injectable()
-export class ItemPromoteService {
-  private readonly logger = new Logger(ItemPromoteService.name);
+export class ItemsService {
+  private readonly logger = new Logger(ItemsService.name);
 
   constructor(
-    private readonly registry: SourceRegistryService,
-    private readonly brands: BrandRegistryService,
+    private readonly registry: SourcesService,
+    private readonly brands: BrandsService,
+    private readonly links: ItemMentionsService,
     @InjectRepository(Mention) private readonly mentions: Repository<Mention>,
     @InjectRepository(Item) private readonly items: Repository<Item>,
     @InjectRepository(DropGroup) private readonly drops: Repository<DropGroup>,
-    @InjectRepository(ItemMention) private readonly links: Repository<ItemMention>,
   ) {}
 
   /**
    * `codes`가 비면 소스 전부.
    *
    * **`enabled`를 보지 않는다** — 정규화는 외부 요청이 0건이다. 수집 게이트를 여기 물리면
-   * 문의 대기 중인 소스의 mention이 영영 item이 되지 못한다 (SourceRegistryService.loadAll).
+   * 문의 대기 중인 소스의 mention이 영영 item이 되지 못한다 (SourcesService.loadAll).
    */
   async promoteAll(codes: string[]): Promise<PromoteResult> {
     const loaded = await this.registry.loadAll();
@@ -101,7 +101,11 @@ export class ItemPromoteService {
         // mixed는 「다른 작품이 섞였을 수 있다」는 뜻이다. 빼지 않고 라벨로 알린다 (§7.2)
         const labels = mention.relevance === 'mixed' ? [...item.labels, '他キャラ混在'] : item.labels;
 
-        const outcome = await this.upsert(item, { brandId, dropId, labels }, mention.id);
+        const outcome = await this.upsert(
+          item,
+          { brandId, dropId, labels, observedAt: mention.observedAt },
+          mention.id,
+        );
         totals[outcome] += 1;
       }
     }
@@ -119,17 +123,24 @@ export class ItemPromoteService {
    */
   private async upsert(
     item: ReturnType<typeof normalize>,
-    resolved: { brandId: string | null; dropId: string | null; labels: string[] },
+    resolved: { brandId: string | null; dropId: string | null; labels: string[]; observedAt: Date },
     mentionId: string,
   ): Promise<'created' | 'updated'> {
     const existing = await this.items.findOne({ where: { canonicalUrl: item.canonicalUrl } });
+
+    // `status_at`은 **상태가 실제로 바뀐 관측 시각**이다. 벽시계가 아니다.
+    // 매 실행 now()로 덮으면 「몇 번 돌려도 같은 결과」가 깨지고, 관측 근거 없는
+    // 전이 시각이 생겨 에픽 D의 status_history 입력을 오염시킨다.
+    // 근거는 그 mention의 observed_at이다 — 정규화를 언제 돌렸는지는 무관하다
+    const statusChanged = existing === null || existing.status !== item.status;
+    const statusAt = statusChanged ? resolved.observedAt : existing.statusAt;
 
     const values = {
       ...item,
       brandId: resolved.brandId,
       dropId: resolved.dropId,
       labels: resolved.labels,
-      statusAt: new Date(),
+      statusAt,
     };
     // DTO 전용 필드다. 컬럼이 아니다 — 상태 이력과 예정은 에픽 D가 만든다
     delete (values as Partial<Record<string, unknown>>).restockDates;
@@ -138,30 +149,21 @@ export class ItemPromoteService {
 
     if (existing === null) {
       const saved = await this.items.save(this.items.create(values));
-      await this.link(saved.id, mentionId);
+      await this.links.link(saved.id, mentionId);
       return 'created';
     }
 
     // 억제된 item은 되살리지 않는다. 삭제 요청 대응이 다음 수집에 뒤집히면 안 된다
     if (existing.suppressedAt !== null) {
-      await this.link(existing.id, mentionId);
+      await this.links.link(existing.id, mentionId);
       return 'updated';
     }
 
     await this.items.update(existing.id, values);
-    await this.link(existing.id, mentionId);
+    await this.links.link(existing.id, mentionId);
     return 'updated';
   }
 
-  /** 같은 짝을 두 번 넣지 않는다. 재실행이 안전해야 한다 */
-  private async link(itemId: string, mentionId: string): Promise<void> {
-    await this.links
-      .createQueryBuilder()
-      .insert()
-      .values({ itemId, mentionId, role: 'primary', linkedBy: 'auto' })
-      .orIgnore()
-      .execute();
-  }
 
   /**
    * 컬렉션 묶음은 컬렉션 title이 필요한데 `products.json`에 없다 —

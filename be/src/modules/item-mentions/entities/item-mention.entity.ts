@@ -10,9 +10,8 @@ import {
 } from 'typeorm';
 
 import { inList } from '@/modules/_common/enum-check';
+import { Item } from '@/modules/items/entities/item.entity';
 import { Mention } from '@/modules/mentions/entities/mention.entity';
-
-import { Item } from './item.entity';
 
 /** `primary`가 공식 링크의 출처다 */
 export const LINK_ROLES = ['primary', 'evidence'] as const;

@@ -1,6 +1,6 @@
 import { Command, CommandRunner, Option } from 'nest-commander';
 
-import { CollectService } from '@/modules/collectors/collect.service';
+import { CollectorsService } from '@/modules/collectors/collectors.service';
 
 interface CollectOptions {
   source?: string;
@@ -14,7 +14,7 @@ interface CollectOptions {
  */
 @Command({ name: 'collect', description: '소스를 수집해 mention을 만든다' })
 export class CollectCommand extends CommandRunner {
-  constructor(private readonly collect: CollectService) {
+  constructor(private readonly collect: CollectorsService) {
     super();
   }
 

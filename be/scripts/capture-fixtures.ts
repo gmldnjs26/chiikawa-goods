@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { FetcherService } from '@/modules/_common/fetcher/fetcher.service';
 import { HttpTransportService } from '@/modules/_common/fetcher/http-transport.service';
 import { RobotsService } from '@/modules/_common/fetcher/robots.service';
-import { keepAllowedFields } from '@/modules/collectors/adapters/shopify/utils/payload-fields';
+import { keepAllowedFields } from '@/modules/collectors/adapters/shopify/utils/payload-whitelist';
 import {
   extractCollectionHandles,
   pickCollectionSitemaps,
