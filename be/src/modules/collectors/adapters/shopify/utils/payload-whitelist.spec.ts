@@ -1,4 +1,4 @@
-import { keepAllowedFields } from './payload-fields';
+import { keepAllowedFields } from './payload-whitelist';
 
 describe('keepAllowedFields', () => {
   const product = {

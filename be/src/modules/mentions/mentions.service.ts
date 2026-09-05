@@ -21,8 +21,8 @@ export interface StoreResult {
  * 이 판정 없이 도는 실행이 하루라도 있으면 안 된다 (docs/tech-stack.md §4.2).
  */
 @Injectable()
-export class MentionStoreService {
-  private readonly logger = new Logger(MentionStoreService.name);
+export class MentionsService {
+  private readonly logger = new Logger(MentionsService.name);
 
   constructor(@InjectRepository(Mention) private readonly mentions: Repository<Mention>) {}
 

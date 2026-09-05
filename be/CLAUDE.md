@@ -60,6 +60,15 @@ be/src/
   나누는 건 **모듈 안에서**다
 - **디렉토리는 내용이 생길 때 만든다.** 엔티티만 있는 도메인은 `entities/`만 있으면 된다.
   빈 `dto/`를 미리 파두지 않는다
+- **모듈을 가르는 기준은 「이 개념이 무엇의 것인가」다.** 테이블이 어느 쪽 FK를 갖느냐가 아니다.
+  - N:N 관계 테이블은 **관계 자체가 도메인**이다. 양쪽 어디에도 두지 않는다 —
+    `item_mention`은 `items/`가 아니라 `item-mentions/`다. 양쪽을 아는 것은 관계 모듈뿐이다
+  - 한 모듈이 다른 도메인의 엔티티를 **쓰기 시작**하면 경계를 의심한다. 읽기는 괜찮다
+  - 서비스가 하나면 **도메인명**(`items.service.ts`), 둘 이상이면 **역할명**
+    (`mentions.service.ts` + `payload-purge.service.ts`). 역할명이 붙는다는 것은
+    그 일이 도메인 본체가 아니라는 뜻이고, 커지면 모듈로 뺀다
+- **파일명을 줄이지 않는다.** `title-norm`이 아니라 `title-normalize`, `payload-fields`가
+  아니라 `payload-whitelist`. 줄임말은 읽는 사람이 풀어야 한다
 - **`*.service.ts`는 평면에 둔다.** `services/`로 한 겹 더 넣지 않는다 — 모듈의 본체이고,
   파일 이름에 이미 역할이 있다
 - 디렉토리명은 **복수**, 테이블명은 **단수** (`modules/sources/` ↔ `source`)
@@ -145,6 +154,24 @@ batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
 2. `docker exec chiikawa-postgres psql -U chiikawa -d chiikawa -c '\d+ <테이블>'` → `docs/db-schema.md`와 대조
 3. `migration:revert` → `run` 왕복. **롤백 안 되는 migration은 결함이다**
 
+## 3.5 어디까지가 `config`이고 어디부터가 어댑터인가
+
+사이트마다 다른 것을 흡수하는 층이 둘이다. **섞으면 안 된다.**
+
+| 차이의 종류 | 흡수하는 곳 | 예 |
+| --- | --- | --- |
+| 값의 문자열 형식 | `source.config` (DB) | `20260821` vs `2026年8月21日発売商品` |
+| 기능이 있다/없다 | `source.config` (`null`) | もぐもぐ本舗에 예약 태그가 없다 |
+| 데이터 구조 · 취득 방식 | 어댑터 (코드) | Shopify JSON vs RSS vs HTML |
+| 본문 문장 해석 | 어댑터 (코드) | 「9月下旬発売予定」를 찾는다 |
+
+`config`가 갖는 것은 **정규식과 목록과 불리언**뿐이다. 그걸로 표현이 안 되는 차이가
+`config`에 들어가려 하면 — 조건 분기, 순서 의존, 두 필드를 조합해야 하는 규칙 —
+**그건 새 어댑터가 필요하다는 신호다.** JSON 안에 미니 언어를 만들지 않는다.
+
+어댑터 하나에 소스 여럿이 붙는다. 지금은 Shopify 어댑터 1개에 소스 3개다.
+두 번째 어댑터가 생기기 전에 어댑터 간 공통 추상화를 미리 만들지 않는다 — 틀린 추상화가 나온다.
+
 ## 4. 외부에서 온 값은 경계에서 파싱한다
 
 `source.config`는 **DB 행에 든 임의 JSON**이다. 타입 단정으로 받지 않는다.
@@ -197,6 +224,20 @@ cat be/node_modules/typeorm/decorator/columns/PrimaryGeneratedColumn.d.ts
 - **진단 커맨드에 우회 플래그를 만들지 않는다.** `cli health`는 깨진 `config` 행이 있으면 죽는다.
   §4대로 동작하는 것이고, 그 비용을 받는다 — 깨진 행은 `psql`로 본다
 
-## 7. 미결정
+## 7. `enabled`는 「외부 요청을 보낼 것인가」다
+
+`source.enabled=false`가 막는 것은 **네트워크로 나가는 일**뿐이다.
+이미 DB에 있는 `mention`을 `item`으로 정규화하는 데는 요청이 0건이므로 이 게이트가 걸리지 않는다.
+
+- 수집 경로는 `SourceRegistryService.load()` — `enabled=true`만
+- 정규화 경로는 `loadAll()` — 전부
+
+걸어 두면 ToS 문의 대기로 `enabled=false`인 소스의 mention이 영영 `item`이 되지 못하고,
+화면을 만들 데이터가 사라진다.
+
+**게시 게이트는 따로 있다** — `docs/plan.md` §8.1 「소스별 게시 허가」. 읽기 API(에픽 E)가
+회신 있는 소스의 `item`만 낸다. `item` 테이블에 있다고 화면에 나오는 것이 아니다.
+
+## 8. 미결정
 
 현재 없음.

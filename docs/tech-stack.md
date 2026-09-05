@@ -74,7 +74,7 @@
 | DB | **Cloud SQL for PostgreSQL 18** `db-f1-micro` | RDB 1개 통합 보관. 18은 Cloud SQL 기본값이고 로컬 `postgres:18-alpine`과 메이저가 같다 |
 | DB 접속 | `/cloudsql` **Unix 소켓 볼륨 마운트** | `tomomachi`의 Job과 동일 방식 |
 | 시크릿 | Secret Manager (**껍데기만 IaC, 값은 수동**) | `tomomachi` 규약 |
-| CI/CD | GitHub Actions + Workload Identity Federation | 서비스 계정 키 파일 미사용 |
+| CI/CD | GitHub Actions + Workload Identity Federation | 서비스 계정 키 파일 미사용. **검사 워크플로는 `.github/workflows/ci.yml`** — PR마다 lint·typecheck·test·build, migration은 Postgres 서비스 컨테이너에서 drift·revert 왕복까지 (`be/CLAUDE.md` §3). 배포 워크플로는 infra 착수 시 |
 | 리전 | `asia-northeast1` (도쿄) | 대상 사이트가 전부 일본 |
 
 ### 1.4 버전 상한은 왜 최신이 아닌가

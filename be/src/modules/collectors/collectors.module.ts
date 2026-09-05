@@ -8,7 +8,7 @@ import { Source } from '@/modules/sources/entities/source.entity';
 import { SourcesModule } from '@/modules/sources/sources.module';
 
 import { ShopifyAdapter } from './adapters/shopify/shopify.adapter';
-import { CollectService } from './collect.service';
+import { CollectorsService } from './collectors.service';
 import { SourceLockService } from './source-lock.service';
 
 @Module({
@@ -18,7 +18,7 @@ import { SourceLockService } from './source-lock.service';
     SourcesModule,
     MentionsModule,
   ],
-  providers: [ShopifyAdapter, SourceLockService, CollectService],
-  exports: [CollectService],
+  providers: [ShopifyAdapter, SourceLockService, CollectorsService],
+  exports: [CollectorsService],
 })
 export class CollectorsModule {}

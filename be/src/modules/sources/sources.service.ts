@@ -19,7 +19,7 @@ export interface LoadedSource {
  * 어댑터 안에서 늦게 파싱하면 요건을 위반하면서 맞는 것처럼 보인다.
  */
 @Injectable()
-export class SourceRegistryService implements OnModuleInit {
+export class SourcesService implements OnModuleInit {
   private loaded: LoadedSource[] = [];
 
   constructor(
@@ -36,6 +36,20 @@ export class SourceRegistryService implements OnModuleInit {
     const rows = await this.sources.find({ where: { enabled: true } });
     this.loaded = rows.map((row) => ({ row, config: parseConfig(row) }));
     return this.loaded;
+  }
+
+  /**
+   * `enabled`와 무관하게 전부 읽는다.
+   *
+   * **`enabled`는 「외부 요청을 보낼 것인가」다.** 이미 DB에 있는 `mention`을 정규화하는 데는
+   * 요청이 0건이므로 이 게이트가 걸릴 이유가 없다. 걸어 두면 ToS 문의 대기로
+   * `enabled=false`인 3소스의 mention이 영영 `item`이 되지 못한다 — 화면을 만들 데이터가 없어진다.
+   *
+   * 공개 여부의 게이트는 여기가 아니라 [[plan]] §8.1이다.
+   */
+  async loadAll(): Promise<LoadedSource[]> {
+    const rows = await this.sources.find();
+    return rows.map((row) => ({ row, config: parseConfig(row) }));
   }
 
   all(): LoadedSource[] {

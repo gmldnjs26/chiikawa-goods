@@ -274,7 +274,7 @@ CREATE INDEX ON item USING gin (labels);
 ```sql
 CREATE TABLE drop_group (
   id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  title        text NOT NULL,
+  title        text,                 -- 컬렉션 title. 날짜+브랜드 묶음은 NULL (아래)
   kind         text NOT NULL,        -- CHECK: preorder|release|restock|campaign
   primary_date date,
   grouping_key text,                 -- 자동 묶음 근거 (예: 컬렉션 handle)
@@ -300,6 +300,12 @@ CREATE INDEX ON drop_group (primary_date DESC);
 섞으면 알림 문구를 만들 수 없다.
 
 `item.drop_id`는 **NULL 허용**이다. 묶이지 않은 `item`도 화면에는 단독으로 나온다.
+
+> [!note] `title`은 NULL 허용이다 (2026-09-05)
+> 우선 1(컬렉션 소속)은 컬렉션 title이 있어 `8月21日発売商品`처럼 채워진다.
+> 우선 2(날짜+브랜드+kind)는 **표시 제목의 근거가 없다.** `2026-08-21:3:release` 같은
+> 기계 키를 사용자 대면 컬럼에 넣지 않는다 — 비워 두고, 화면은 `primary_date`와 `kind`로
+> 「8/21 発売」를 만든다. 「없는 정보를 만들지 않는다」가 제목에도 적용된다.
 
 ---
 
@@ -504,7 +510,7 @@ SELECT item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
 | 2 | `brand` 초기 목록과 `match_rules` 값 | 태그 기반으로 판정 가능함은 확인됨. 목록 자체는 미확정 |
 | 3 | 편의점·프라이즈 소스의 세금 표기 | 공식 스토어는 `税込` 확정. 다른 소스는 미확인 |
 | 4 | `category`(product_type) 값 정규화 여부 | 원문 그대로 둘지, 소수 카테고리로 매핑할지 |
-| 5 | 캐릭터 룩업 테이블 (`character`) | [[source-mapping]] §6의 `label_tag_source: "character_table"`이 참조하는데 §13 마이그레이션 순서에 없다. 라벨 판정(에픽 C)에서 필요해진다 — 그때 순서 몇 번에 넣을지 미정 |
+| 5 | 캐릭터 룩업 테이블 (`character`) | **에픽 C에서 만들지 않기로 했다** (2026-09-04). `label_tag_source: 'character_table'`은 참조 대상이 없으면 **캐릭터 라벨을 비운다** — 칩이 안 나올 뿐 오분류는 없다([[source-mapping]] §7.1). 목록을 정할 근거가 아직 없어 지금 만들면 추측이 된다. `labels`는 `label_tags` + `label_tags_extra`로만 채운다 |
 
 **해소됨** — `region`(도시 단위) · `drop_group` 묶음 기준(§6) · `sale_final`(제거) ·
 공식 스토어 `price_tax_included`(true 고정).
