@@ -61,6 +61,7 @@ export function normalize(input: NormalizeInput): NormalizedItem {
     labels: pickLabels(tags, config),
     status: status.value,
     statusConflict: status.conflict,
+    priceUnparsed: variants.length > 0 && prices.length === 0,
     preorderOn: latestTagDate(tags, config.preorder_tag),
     releaseOn: latestTagDate(tags, config.release_tag),
     // 과거 재입고가 누적된다. 전부 넘긴다 — 백필의 입력이다 (§3.4)
@@ -107,7 +108,10 @@ function resolveAcquisition(fallback: string, seriesTotal: number | null): Acqui
   return 'fixed';
 }
 
-/** Shopify는 가격을 문자열로 준다 (`"1870"`). JPY는 정수다 — 소수는 반올림하지 않고 버린다 */
+/**
+ * Shopify는 가격을 문자열로 준다 (`"1870"`, 실측 3소스). JPY는 정수다 —
+ * 소수는 반올림하지 않고 버린다. 전건이 버려지면 `priceUnparsed`로 올라가 경고가 난다
+ */
 function toJpy(value: unknown): number | null {
   if (typeof value === 'number') return Number.isInteger(value) ? value : null;
   if (typeof value !== 'string') return null;

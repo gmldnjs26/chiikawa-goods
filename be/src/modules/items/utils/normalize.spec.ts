@@ -103,6 +103,14 @@ describe('normalize', () => {
     expect(run({}, 'アクリルスタンド（全７種ＢＯＸ）').seriesTotal).toBe(7);
   });
 
+  // 조용한 누락이 가장 위험하다. variant가 있는데 가격이 전부 NULL이면 형식이 바뀐 것이다
+  it('가격 형식이 바뀌면 priceUnparsed로 올린다', () => {
+    expect(run({ variants: [{ price: '1,870' }, { price: 'N/A' }] }).priceUnparsed).toBe(true);
+    expect(run({ variants: [{ price: '1870' }, { price: 'N/A' }] }).priceUnparsed).toBe(false);
+    // variant 자체가 없으면 실패가 아니다
+    expect(run({ variants: [] }).priceUnparsed).toBe(false);
+  });
+
   it('판정 못 한 값은 비운다 — 추측으로 채우지 않는다', () => {
     const item = run({ tags: ['ぬいぐるみ'], images: [], variants: [], product_type: undefined });
 

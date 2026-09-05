@@ -274,7 +274,7 @@ CREATE INDEX ON item USING gin (labels);
 ```sql
 CREATE TABLE drop_group (
   id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  title        text NOT NULL,
+  title        text,                 -- 컬렉션 title. 날짜+브랜드 묶음은 NULL (아래)
   kind         text NOT NULL,        -- CHECK: preorder|release|restock|campaign
   primary_date date,
   grouping_key text,                 -- 자동 묶음 근거 (예: 컬렉션 handle)
@@ -300,6 +300,12 @@ CREATE INDEX ON drop_group (primary_date DESC);
 섞으면 알림 문구를 만들 수 없다.
 
 `item.drop_id`는 **NULL 허용**이다. 묶이지 않은 `item`도 화면에는 단독으로 나온다.
+
+> [!note] `title`은 NULL 허용이다 (2026-09-05)
+> 우선 1(컬렉션 소속)은 컬렉션 title이 있어 `8月21日発売商品`처럼 채워진다.
+> 우선 2(날짜+브랜드+kind)는 **표시 제목의 근거가 없다.** `2026-08-21:3:release` 같은
+> 기계 키를 사용자 대면 컬럼에 넣지 않는다 — 비워 두고, 화면은 `primary_date`와 `kind`로
+> 「8/21 発売」를 만든다. 「없는 정보를 만들지 않는다」가 제목에도 적용된다.
 
 ---
 

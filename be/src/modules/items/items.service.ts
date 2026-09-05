@@ -92,6 +92,11 @@ export class ItemsService {
           );
         }
 
+        if (item.priceUnparsed) {
+          // 250건 상한과 같은 부류다 — 조용한 누락이 가장 위험하다 (docs/source-mapping.md §1)
+          this.logger.warn(`${source.row.code}: variant는 있는데 가격을 못 읽었다 — ${mention.url}`);
+        }
+
         const brandId = judgeBrand(
           { tags: labelSource(mention.rawPayload), collections: item.collections, title: item.title },
           candidates,
@@ -146,6 +151,7 @@ export class ItemsService {
     delete (values as Partial<Record<string, unknown>>).restockDates;
     delete (values as Partial<Record<string, unknown>>).collections;
     delete (values as Partial<Record<string, unknown>>).statusConflict;
+    delete (values as Partial<Record<string, unknown>>).priceUnparsed;
 
     if (existing === null) {
       const saved = await this.items.save(this.items.create(values));
@@ -189,7 +195,9 @@ export class ItemsService {
       .insert()
       .values({
         groupingKey: grouping.key,
-        title: grouping.key,
+        // 표시용 제목은 컬렉션 title이 있어야 만들 수 있는데 products.json에 없다.
+        // 기계 키를 사용자 대면 컬럼에 넣지 않는다 — 비워 두고 화면은 primary_date+kind로 낸다
+        title: null,
         kind: grouping.kind,
         primaryDate: grouping.primaryDate,
       })

@@ -34,4 +34,6 @@ export interface NormalizedItem {
   readonly collections: string[];
   /** 태그와 available이 모순이다 — 조용히 한쪽으로 정하지 않는다 (§3.3) */
   readonly statusConflict: boolean;
+  /** variant는 있는데 가격을 하나도 못 읽었다. 형식이 바뀐 신호다 — 조용한 NULL로 두지 않는다 */
+  readonly priceUnparsed: boolean;
 }

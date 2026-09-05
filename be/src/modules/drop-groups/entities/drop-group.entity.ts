@@ -19,8 +19,9 @@ export class DropGroup {
   @PrimaryGeneratedColumn('identity', { type: 'bigint', generatedIdentity: 'ALWAYS' })
   id!: string;
 
-  @Column({ type: 'text' })
-  title!: string;
+  /** 컬렉션 title에서 온다. 날짜+브랜드 묶음에는 근거가 없어 비운다 — 화면은 primary_date+kind로 낸다 */
+  @Column({ type: 'text', nullable: true })
+  title!: string | null;
 
   @Column({ type: 'text' })
   kind!: DropKind;
