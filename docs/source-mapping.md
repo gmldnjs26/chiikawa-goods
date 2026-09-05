@@ -259,6 +259,9 @@ variant별로 판정이 갈린다. 우리 `item`은 상품 1개 = 카드 1장이
 | `observed_at` | 태그 날짜 **00:00 JST** |
 | `mention_id` | 백필 근거가 된 mention |
 
+**미래 날짜의 재입고 태그는 백필하지 않는다.** 그건 과거가 아니라 예정이다 (§3.5).
+「과거」의 기준은 그 mention의 `observed_at`(JST 달력일)이다 — 지금 시각이 아니다. 재실행 결과가 같아야 한다.
+
 > [!warning] 백필 행에 표시를 남긴다
 > 실시간 관측과 구별되어야 한다. `observed_at`이 00:00인 행은 **날짜만 아는 추정**이다.
 > 개시 시각 통계(§3.5)를 낼 때 백필 행은 제외한다. 안 그러면 "재입고는 0시에 일어난다"는
@@ -270,9 +273,13 @@ variant별로 판정이 갈린다. 우리 `item`은 상품 1개 = 카드 1장이
 | --- | --- |
 | `販売開始前` + 예약 태그 미래 날짜 | `kind=preorder`, `scheduled_on` |
 | 발매 태그가 미래 날짜 | `kind=release`, `scheduled_on` |
+| 재입고 태그가 미래 날짜 | `kind=restock`, `scheduled_on` |
 | 상품 설명에 `再入荷予定` 문구 | `kind=restock`, `scheduled_on` 또는 `scheduled_text` |
 
-세 번째는 **본문 파싱이 필요하고 형식이 정해져 있지 않다.** v0에서는 하지 않는다.
+「미래」는 그 mention의 `observed_at`(JST 달력일)보다 뒤다. 태그 날짜 = 관측일은 예정이 아니다 (당일).
+예정이 사라지면 supersede한다 ([[db-schema]] §9).
+
+네 번째는 **본문 파싱이 필요하고 형식이 정해져 있지 않다.** v0에서는 하지 않는다.
 `9月下旬` 같은 표기는 `scheduled_text`에 원문 그대로 넣는다 ([[data-collection-design]] §3.3).
 
 ---

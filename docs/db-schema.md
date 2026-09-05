@@ -350,6 +350,15 @@ CREATE INDEX ON status_history (item_id, observed_at DESC);
 > `ENDED → ON_SALE → ENDED → ON_SALE`이 정상 이력이다.
 
 **상태가 바뀔 때만** 행을 추가한다(매 폴링마다가 아니라). `item.status`는 최신 행의 사본이다.
+첫 관측도 1행이다 — `∅ → 상태`. 그래서 모든 `item`은 최소 1행을 갖는다.
+
+> [!note] 재실행 멱등을 위한 부분 unique 2개
+> 정규화는 몇 번을 돌려도 같은 결과여야 한다 (`be/CLAUDE.md` §1). 관측 1건은 전이 1행이므로
+> `(item_id, mention_id) WHERE NOT is_backfilled`, 백필은 날짜 1개가 1행이므로
+> `(item_id, observed_at) WHERE is_backfilled`에 unique를 건다. `(item_id, status)`와 다르다 —
+> 재입고 반복은 **다른 mention**에서 오므로 막히지 않는다.
+> 판정 규칙을 고쳐 다시 돌려도 **이미 있는 행은 고치지 않는다** (`ON CONFLICT DO NOTHING`).
+> append-only다. 틀린 이력은 사람이 본다.
 
 > [!warning] `is_backfilled` 행을 실측 통계에 넣지 않는다
 > `RE20260415` 같은 태그에서 되살린 행은 **날짜만 알고 시각은 모른다**(00:00 JST로 넣는다).
@@ -388,6 +397,17 @@ CREATE INDEX ON scheduled_event (scheduled_on)
 
 **append-only + `superseded_at`.** 공지는 갱신된다 — `9月下旬` → `9/15`.
 덮어쓰면 "언제 무엇이 공지됐는지"가 사라진다. 새 행을 넣고 이전 행에 `superseded_at`을 찍는다.
+
+**supersede 규칙** — 같은 `(item_id, kind)` 안에서:
+
+| 상황 | 동작 |
+| --- | --- |
+| 이 관측이 그 kind에 **마지막으로 기록된 시각**(`observed_at` 또는 `superseded_at`)보다 오래됐다 | 무시한다. 재실행이 과거 mention을 다시 볼 때 기록된 이력을 뒤집지 않기 위해서다. 같은 시각도 「이미 봤다」다 |
+| 유효 행과 내용이 같다 | 아무것도 하지 않는다 |
+| 내용이 다르다 | 새 행 + 유효 행에 `superseded_at = observed_at` |
+| 예정이 사라졌다 (날짜가 지났다 · 태그가 빠졌다) | 유효 행에 `superseded_at = observed_at`. 예정은 「앞으로 일어날 일」이다 — 지난 날짜가 유효 행으로 남지 않는다 |
+
+`observed_at`은 그 mention의 관측 시각이다. 정규화를 돌린 시각이 아니다 (§8과 같은 이유).
 
 > [!warning] `scheduled_text`를 날짜로 정규화하지 않는다
 > `9月下旬`을 `9/21`로 바꾸면 **없는 정보를 만들어낸다.**
