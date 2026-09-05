@@ -159,6 +159,15 @@ JSX 안에서 판정하면 테스트할 수 없다. 아래 2개는 **순수함�
 
 ---
 
+### 타입 검사는 `next typegen`이 먼저다
+
+`LayoutProps<'/'>` · `PageProps` 같은 라우트 타입은 소스에 없다. **Next 16이 `.next/types/`에
+생성한다** (`node_modules/next/dist/bin/next`의 `typegen` 커맨드). 그래서 `tsc --noEmit`만 돌리면
+fresh clone에서 `Cannot find name 'LayoutProps'`로 죽는다 — 로컬은 이전 빌드 산출물이 남아 있어
+통과하는 것뿐이다. CI 첫 실행에서 실제로 이렇게 깨졌다 (2026-09-05).
+
+`npm run typecheck`가 `next typegen && tsc --noEmit`인 이유다. `tsc`를 직접 부르지 않는다.
+
 ## 6. 하지 않는 것
 
 - **`'use client'`를 page/layout에 붙이지 않는다** (§1)
