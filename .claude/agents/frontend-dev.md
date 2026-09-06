@@ -11,7 +11,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - **`fe/CLAUDE.md` — 구조 · 레이어 경계 · 렌더링 기본값 · 데이터 흐름.**
   이 에이전트는 **디자인과 화면 규약**을 담당한다. 구조 규칙은 그쪽에 있고 여기 복사하지 않는다
 - `docs/plan.md` §6 — 화면 규약
-- `prototype/index.html` — 레이아웃·뱃지·필터의 검증된 원안. **여기서 벗어날 때는 이유를 말한다**
+- `prototype/index.html` — 정보 구조의 원안(홈 3섹션 · 사건 캘린더 · 필터). **시각(색 · 아이콘 · 뱃지 형태)은 디자인 플랜 v1이 대체했다** — §디자인
 
 ## 스택
 
@@ -29,16 +29,20 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 
 ```
 fe/src/
-├── app/layout.tsx                  lang="ja", QueryProvider, 시스템 폰트
+├── app/                            layout(헤더 · 탭 · 푸터) · 홈 · [section](/now /soon /restock) · calendar · archive · api/archive · error · not-found
+├── app/home-sections.tsx           홈 3섹션의 문안 · 조립. 홈과 전용 페이지가 같이 쓴다
 ├── app/globals.css                 시맨틱 토큰(라이트/다크) + @theme inline
-├── app/page.tsx                    자리표시. 실제 화면은 아직 없다
-├── app/providers/query-provider.tsx
-└── lib/cn.ts                       clsx + tailwind-merge
+├── modules/_common/                Chip · Section · NavTabs(밑줄 인디케이터 1개가 활성 탭으로 슬라이드) · ThemeToggle(Sun/Moon 2상태, View Transition 원형 전환, localStorage) · consts(채널 · 지역 · 예정 어휘 · 테마 키)
+├── modules/item/                   badge.ts · consts.ts(RESTOCK_BADGE_DAYS) · ItemCard · StatusBadge · SourceLinks · CardImage · FilterableSections · ArchiveList
+├── modules/calendar/               month.ts · CalendarList · MonthNav
+└── lib/                            schema.ts(zod) · api.ts · format.ts · cn.ts
 ```
+
+화면 3개가 픽스처(`API_BASE_URL=fixture`)와 로컬 API 양쪽으로 그려진다 (#13, 2026-09-06).
 
 `@/`는 `fe/src/`다. 도메인 컴포넌트는 `src/modules/<도메인>/components/`에 만든다.
 
-색은 `globals.css`의 토큰만 쓴다 — `text-label-secondary`, `bg-surface`, `text-on-sale` 등.
+색은 `globals.css`의 토큰만 쓴다 — `text-label-secondary`, `bg-surface`, `bg-fill`, `border-border`, `text-on-sale`, `text-restock` 등.
 새 색이 필요하면 **토큰을 추가하고** 쓴다. 컴포넌트에 hex를 박지 않는다.
 
 ## 화면 규약
@@ -49,7 +53,7 @@ fe/src/
 - 뱃지는 **상태 + 가장 가까운 예정**의 조합이다. 상태만으로 판정하지 않는다
 - 캘린더에는 **사건**을 놓는다. 같은 굿즈가 예약일·발매일에 두 번 나온다.
   날짜가 확정된 예정만 배치하고 `9月下旬`은 목록에만 낸다
-- 필터는 채널 우선. `ランダム除く` / `オンラインだけ` / `再入荷を待てるものだけ`
+- 필터는 채널 우선. 체크박스는 `ランダム除く` / `オンラインだけ` 2개 (`plan.md` §6.5)
 - 각 항목에 **출처 링크**를 낸다. 이게 기존 팬 블로그가 하지 않는 것이다
 
 ## 정직하게 표시한다
@@ -65,7 +69,22 @@ fe/src/
 `川越店限定`은 온라인에서 살 수 있다. 지역 제약이 아니라 정보 칩(`labels`)이다.
 `region`은 "내가 그 장소에 가야 하는가"일 때만 쓴다.
 
-## 디자인 — Apple Human Interface Guidelines를 기준으로 삼는다
+## 디자인 — 플랜 v1이 진실이다
+
+**시각 정체성은 디자인 플랜 v1(2026-09-06)이 정했다.** 의뢰서는 `docs/design-brief.md`, 플랜 원본은 Claude Design
+프로젝트 「ちいかわグッズ タイムライン Design Plan」(DesignSync로 읽는다). 요약:
+
+- **공항 출발 안내판** — 모든 행이 같은 열 구조. 왼쪽 2px 상태 레일 → 상품 열 → 가격. 카드는 개별 상자가 아니라 섹션 안의 한 행
+- **불확실성 표기 문법** — 확정은 실선, 추정은 점선. `その他` 칩 점선 테두리 · `時刻は推定` 점선 밑줄 · `再入荷未定` 점선 링 + 점선 레일 · `9月下旬` 빈 도트
+- **이모지 없음.** 섹션 마커는 lucide 아이콘(상태색 · ShoppingBag / CalendarClock / PackageOpen / Archive), 채널은 텍스트 라벨, 뱃지는 도트 + 텍스트. 아이콘 라이브러리는 `lucide-react` 하나
+- 액센트(움버)는 링크 · 탭 인디케이터 · 체크박스 3곳에만. 필터 선택은 `label` 채움
+- 이미지 빈칸은 브랜드 이니셜 1자(市/ナ/ポ/も/く/他) — 깨진 게 아니라 라벨이 있는 빈칸
+- 完売만 카드 전체 톤다운. 再入荷 예고 · 未定 · 判定不可는 톤다운하지 않는다
+- 타입 스케일 4단계 20/16/14/12, 숫자 `tabular-nums`, 웜 그레이(hue 70°)
+
+아래는 플랜의 바탕이 된 원칙이다. 플랜과 어긋나면 플랜이 이긴다.
+
+### Apple Human Interface Guidelines를 기준으로 삼는다
 
 치이카와 굿즈를 다루지만 **UI가 캐릭터 굿즈처럼 보이면 안 된다.**
 정보를 빠르게 읽는 도구다. 콘텐츠가 주인공이고 UI는 물러난다.

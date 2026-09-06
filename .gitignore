@@ -22,3 +22,9 @@ coverage/
 .DS_Store
 .idea/
 *.log
+
+# playwright MCP 산출물 (스크린샷 · 콘솔 로그)
+.playwright-mcp/
+
+# 라이브 수집 원문 덤프 — 공개 저장소에 올리지 않는다 (원문 전재 금지, be/test/fixtures/README.md)
+be/test/fixtures/live/

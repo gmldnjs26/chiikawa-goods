@@ -96,7 +96,7 @@ jobs:
           npm run migration:run
 
   fe-check:
-    name: fe · lint · typecheck · build
+    name: fe · lint · typecheck · test · build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -111,4 +111,5 @@ jobs:
       - run: npm ci
       - run: npm run lint -- --max-warnings=0
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build

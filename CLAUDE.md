@@ -14,6 +14,8 @@
 | `docs/source-mapping.md` | 소스 원문 → 컬럼 매핑 · 태그 인벤토리 |
 | `docs/tech-stack.md` | 기술 선정 근거 · 착수 전 검증 항목 |
 | `docs/read-api.md` | 읽기 API 계약 · 응답 형태 · 섹션 판정 · 게시 게이트 |
+| `docs/design-brief.md` | 외부 디자인 의뢰서 · 화면 사양을 디자이너용으로 모은 것 · 아이콘 · 뱃지 · 산출물 |
+| `docs/design-plan.dc.html` | Claude Design 플랜의 **스냅샷**. 진실은 Claude Design 쪽, 동기화는 `/design-sync` 스킬 |
 | `be/CLAUDE.md` | `be/` 디렉토리 · 레이어 경계 · 진입점 · 스키마 변경 절차 |
 | `fe/CLAUDE.md` | `fe/` 구조 · 레이어 경계 · 렌더링 · 데이터 흐름 |
 
