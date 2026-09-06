@@ -7,6 +7,7 @@
 | 관련 문서 | [[read-api]] §2 (카드 데이터 형태) / `fe/CLAUDE.md` §6 (기술 제약의 근거) |
 | 범위 | **의뢰서.** 제품 사양의 진실은 상위 문서다. 여기는 그것을 디자이너가 읽을 수 있게 한 곳에 모은 것이다 |
 | 결과 | **플랜 v1 (2026-09-06) 수령 · 적용 완료.** v1.2: 이미지 자리 72→96px (사용자 수정, 코드 반영). Claude Design 프로젝트 「ちいかわグッズ タイムライン Design Plan」. 요약은 `.claude/agents/frontend-dev.md` §디자인. **v1.1** (2026-09-06): 「5 테마 전환」 절(Sun/Moon 버튼 · 원형 View Transition)을 DesignSync로 캔버스에 추가 |
+| 동기화 | 스냅샷 `docs/design-plan.dc.html`. 읽기 · 쓰기 · 코드 반영 절차는 `.claude/skills/design-sync/SKILL.md` (`/design-sync`) |
 
 ## 0. 당신의 역할
 
