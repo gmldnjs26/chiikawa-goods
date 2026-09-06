@@ -1,8 +1,8 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { type SourceConfig,sourceConfigSchema } from './dto/source-config.schema';
+import { type SourceConfig, sourceConfigSchema } from './dto/source-config.schema';
 import { Source } from './entities/source.entity';
 
 /** `config`까지 파싱이 끝난 소스. 수집 코드는 이 형태만 본다 */
@@ -15,21 +15,19 @@ export interface LoadedSource {
  * 소스 레지스트리 (docs/data-collection-design.md §4).
  *
  * **잘못된 `config`는 수집 중이 아니라 로드 시점에 터진다.**
- * `config`는 DB 행에 있으니 "부팅 시점"이란 곧 여기서 행을 읽는 순간이다.
  * 어댑터 안에서 늦게 파싱하면 요건을 위반하면서 맞는 것처럼 보인다.
+ *
+ * 프로세스 부팅 훅(`onModuleInit`)에서 읽지 않는다 — Job과 읽기 API가 한 모듈 트리를 쓰므로
+ * `config` 한 줄이 깨졌다고 API가 안 뜨면 안 된다 (be/CLAUDE.md §1). 쓰는 커맨드가 부른다.
  */
 @Injectable()
-export class SourcesService implements OnModuleInit {
+export class SourcesService {
   private loaded: LoadedSource[] = [];
 
   constructor(
     @InjectRepository(Source)
     private readonly sources: Repository<Source>,
   ) {}
-
-  async onModuleInit(): Promise<void> {
-    await this.load();
-  }
 
   /** enabled 소스 전부를 파싱한다. 하나라도 깨지면 던진다 — 부분 로드는 하지 않는다 */
   async load(): Promise<LoadedSource[]> {

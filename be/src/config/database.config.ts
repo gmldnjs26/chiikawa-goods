@@ -1,5 +1,17 @@
+import { types as pgTypes } from 'pg';
 import type { DataSourceOptions } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategy';
+
+/**
+ * `date` 컬럼은 문자열(`YYYY-MM-DD`) 그대로 받는다.
+ *
+ * pg 드라이버 기본값은 `date`를 **서버 로컬 자정의 `Date`**로 바꾼다. 엔티티의 `@Column({ type: 'date' })`는
+ * TypeORM이 다시 문자열로 되돌리지만, `@ViewColumn()`은 `type`을 갖지 않아 (`ViewColumnOptions`는
+ * `name` · `transformer`뿐) `Date`가 그대로 새어 나온다 — `item_current_schedule.scheduled_on`이 그랬다.
+ * 달력일은 이 프로젝트에서 전부 JST 문자열이다 (docs/db-schema.md §1). 드라이버 층에서 한 번에 막는다.
+ * 전역 파서라 CLI · API 양쪽에 같이 걸린다.
+ */
+pgTypes.setTypeParser(pgTypes.builtins.DATE, (value: string) => value);
 
 /** TypeORM 1.x는 드라이버별 옵션 타입을 deep import로 노출하지 않는다. 유니온에서 좁혀 쓴다. */
 export type PostgresDataSourceOptions = Extract<DataSourceOptions, { type: 'postgres' }>;

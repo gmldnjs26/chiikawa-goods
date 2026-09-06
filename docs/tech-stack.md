@@ -34,7 +34,7 @@
 | 런타임 | Node.js | Active LTS(24) 목표. `engines`는 `^22.13 \|\| >=24.11` — TypeORM 1.x가 요구하는 범위 |
 | 프레임워크 | NestJS 11 | `tomomachi` 동일 |
 | 배치 진입점 | `nest-commander` | 어댑터 1개 = provider 1개. `tomomachi`의 `src/batch/` 패턴 |
-| HTTP 진입점 | `@nestjs/platform-express` | 읽기 API 전용. **같은 코드베이스의 다른 진입점** → §2.8 |
+| HTTP | `@nestjs/platform-express` | 읽기 API. **같은 이미지, 첫 인자 `api`** → §2.8 |
 | ORM | **TypeORM 1** | `tomomachi`는 0.3이지만 신규 프로젝트다 → §1.5 |
 | DB 드라이버 | `pg` | 표준 Postgres |
 | snake_case | `typeorm-naming-strategy` | `tomomachi`의 `typeorm-naming-strategies`(복수형)는 TypeORM 1을 못 받는다 → §1.5 |
@@ -286,18 +286,16 @@ API를 끼우면 자격증명이 **비공개 서비스에만** 남는다.
 
 대가: Cloud Run Service가 1개 늘고, `be/`에 HTTP 진입점이 생긴다.
 
-**Job의 무표면 원칙(§2.2)은 유지된다.** 수집기 Job과 읽기 API는 **같은 코드베이스의 다른 진입점**이다.
-수집기를 기동할 수 있는 표면은 여전히 인터넷에 없다.
+**Job의 무표면 원칙(§2.2)은 유지된다.** 수집기 Job과 읽기 API는 **같은 이미지를 첫 인자만 바꿔 배포**한다
+(`node dist/main collect` / `node dist/main api`, `be/CLAUDE.md` §1). 진입 파일도 모듈 트리도 하나다 —
+Cloud Run이 이미지와 실행 명령을 따로 받으므로 코드를 나눌 이유가 없다 (2026-09-06 결정. 처음엔 진입 파일을
+둘로 나눴다가 합쳤다). 수집을 기동하는 **라우트가 없다**는 것이 표면 없음의 근거이고, 파일 분리가 아니다.
 
 **읽기 전용이다.** v0에 쓰기 엔드포인트를 만들지 않는다. 수동 교정([[plan]] §7)은 DB 직접 조작이다.
 
-미결정 — 착수 시 정한다:
-
-| 항목 | 선택지 |
-| --- | --- |
-| API 서비스의 인증 | Cloud Run 서비스 간 ID 토큰(`run.invoker`) / 공개 + 읽기 전용 |
-| 응답 형태 | 화면 단위 조립(홈 3섹션을 한 번에) / 리소스 단위 |
-| 페이지네이션 | 아카이브에만 필요하다. 커서 / 오프셋 |
+**계약은 [[read-api]]다** (2026-09-05 결정). 응답 형태는 **화면 단위 조립** — 홈 3섹션을 한 응답에,
+엔드포인트 3개 (`/home` `/calendar` `/archive`). 아카이브만 페이지네이션이고 **커서**(keyset)다.
+근거는 각각 [[read-api]] §1.1 · §5.2. 인증은 `infra/` 착수 시 정한다 ([[read-api]] §8).
 
 ---
 
@@ -312,13 +310,14 @@ API를 끼우면 자격증명이 **비공개 서비스에만** 남는다.
 | 스케줄 | 로컬에 한해 `@nestjs/schedule` 허용. 프로덕션 반영 금지 |
 | 훅 | lefthook (`tomomachi-fe` 동일). **아직 안 넣음** |
 | 부팅 확인 | `be/`에서 `npm run cli health` — DB 버전과 미적용 마이그레이션 유무만 찍는다. 외부 요청 없음 |
+| 읽기 API | `be/`에서 `npm run api` (= `cli api`) — `:3001` (`API_PORT`). 응답이 비면 로컬 `source.publish_allowed_at`을 확인한다 ([[read-api]] §6.3) |
 
 **`postgres:18` 이미지는 볼륨 마운트 위치가 바뀌었다.** `/var/lib/postgresql/data`에 걸면
 `unused mount/volume`으로 기동을 거부한다. 18+는 데이터를 메이저버전별 하위 디렉토리에 두므로
 마운트는 `/var/lib/postgresql` 한 곳이다 (`pg_upgrade --link`를 마운트 경계 없이 쓰기 위한 변경).
 
-**`cli health`는 `source.config`가 깨진 소스가 있으면 죽는다.** 레지스트리가 로드 시점에
-검증하기 때문이고 의도된 동작이다 — 진단 커맨드가 정작 DB가 깨졌을 때 못 쓰인다는 비용을 받아들인다.
+**`cli health`는 `source.config`가 깨진 소스가 있으면 죽는다.** `health`가 레지스트리를 명시적으로
+로드해 검증하기 때문이고 의도된 동작이다 (부팅 훅이 아니다 — 읽기 API까지 죽이지 않기 위해, `be/CLAUDE.md` §1) — 진단 커맨드가 정작 DB가 깨졌을 때 못 쓰인다는 비용을 받아들인다.
 우회 플래그를 만들지 않는다. 깨진 행은 `psql`로 본다.
 
 **로컬 실행 시에도 운영 규범을 지킨다.** 개발 중이라고 폴링 간격을 줄이지 않는다.

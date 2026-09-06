@@ -67,12 +67,17 @@ CREATE TABLE source (
   enabled       boolean NOT NULL DEFAULT true, -- 킬 스위치
   disabled_reason text,                        -- 차단·삭제요청 등 정지 사유
   silence_alert_sec integer,                   -- 이 시간 이상 신규가 없으면 무음 경보
+  publish_allowed_at timestamptz,              -- 게시 허가 회신 시각. NULL이면 이 소스의 item은 화면에 없다
+  image_allowed_at  timestamptz,               -- 이미지 인라인 허가. NULL이면 image_url을 내지 않는다
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
 ```
 
 - `enabled`는 **소스 단위 킬 스위치**다. 403/429/챌린지 수신 시 애플리케이션이 스스로 내린다
+- `publish_allowed_at` · `image_allowed_at`은 **게시 게이트**다 ([[plan]] §8.1). `enabled`와 다른 축이다 —
+  `enabled`는 「요청을 보낼 것인가」, 이쪽은 「화면에 낼 것인가」. 불리언이 아니라 시각인 이유는
+  회신을 **언제** 받았는지가 근거이기 때문이다. 판정 규칙은 [[read-api]] §6
 - `silence_alert_sec`가 **조용한 실패**를 잡는다. 소스마다 기대 빈도가 다르므로 소스별 값이다
 - `channel`을 여기 두는 이유는 §5
 
@@ -495,16 +500,16 @@ SELECT item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
 > 여기서는 `superseded_at`만 권한을 갖고, 중복이 생기면 **화면에 두 줄로 드러나게** 둔다.
 > `(item_id, kind)` 유효 행이 2건 이상이면 경보를 낸다 — supersede 버그의 탐지 지점이다.
 
-| 화면 섹션 | 조건 |
-| --- | --- |
-| 🟢 今すぐ買えるもの | `status='ON_SALE'` |
-| 📦 再入荷 뱃지 | 최근 `status_history`가 `ENDED → ON_SALE` |
-| 🔜 もうすぐ | `status='UPCOMING'` AND 예정일 ≤ D+8 |
-| 🔵 再入荷を待てる | `status='ENDED'` AND restock 예정 존재 AND NOT `undecided` |
-| ⚪️ 再入荷未定 | `status='ENDED'` AND restock 예정 `undecided` |
-| 🔴 完売 / 販売終了 | `status='ENDED'` AND 예정 없음 (`sale_final`이면 販売終了) |
+섹션 소속 · 정렬 · 페이지네이션은 [[read-api]] §3 ~ §5가 진실이다. 여기서는 질의가 무엇을 조인하는지만 둔다.
 
-모든 화면 질의에 `suppressed_at IS NULL`이 붙는다.
+| 화면 | 조인 |
+| --- | --- |
+| 뱃지 (화면이 판정) | `item.status` + 이 뷰의 유효 예정 + 📦는 `status_history`의 최근 `ENDED → ON_SALE` |
+| 홈 · 아카이브 소속 | `item.status` + 이 뷰 (`kind` · `scheduled_on` · `undecided`) |
+| 캘린더 | `item.preorder_on` · `release_on` + 이 뷰의 `restock` + `status_history`의 재입고 |
+| 출처 표기 | `item_mention → mention → source` |
+
+모든 화면 질의에 `suppressed_at IS NULL`과 **게시 게이트**(`source.publish_allowed_at`, §2)가 붙는다.
 
 ---
 

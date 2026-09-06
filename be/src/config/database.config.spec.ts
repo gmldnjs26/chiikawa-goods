@@ -1,3 +1,5 @@
+import { types as pgTypes } from 'pg';
+
 import { buildDataSourceOptions } from './database.config';
 
 const base = { DB_USER: 'u', DB_PASSWORD: 'p', DB_NAME: 'd' };
@@ -29,5 +31,13 @@ describe('buildDataSourceOptions', () => {
 
   it('synchronize는 항상 false다', () => {
     expect(buildDataSourceOptions({ ...base, DB_HOST: 'h' }).synchronize).toBe(false);
+  });
+});
+
+describe('pg 타입 파서', () => {
+  // @ViewColumn()에는 type이 없어 Date가 새어 나온다. 드라이버가 date를 문자열로 주게 고정한다
+  it('date는 YYYY-MM-DD 문자열 그대로다', () => {
+    const parse = pgTypes.getTypeParser(pgTypes.builtins.DATE) as (value: string) => unknown;
+    expect(parse('2026-09-05')).toBe('2026-09-05');
   });
 });
