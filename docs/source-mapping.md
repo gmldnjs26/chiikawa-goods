@@ -520,6 +520,12 @@ title 에 '発売'   → release
 > 거절이나 침묵에 대비한 길: `chiikawamogumogu.shop`(다른 운영사, 자동화 금지 조항 없음) 단독,
 > 또는 공식 SNS 등 공개 발신 소스로 축을 옮긴다. **침묵은 허가가 아니다.**
 
+> [!note] **1회 라이브 수집 기록 (2026-09-06)**
+> 화면 검증용으로 `chiikawamarket.jp` · `chiikawamogumogu.shop`을 **각 1회** 라이브 수집했다 (사용자 판단 — 1회 허용).
+> 절차: `enabled=true` → `collect --source=…` 1회 → 즉시 `enabled=false`로 복원. `disabled_reason`은 그대로다.
+> 결과: `chiikawamarket` 705건 성공. `chiikawamogumogu`는 직전 중단 실행이 주기 게이트(1시간)에 걸려 `skipped_interval` — 8/30 수집분이 그대로다.
+> 반복 수집은 여전히 **문의 회신 뒤**다. 위 결정 표는 바뀌지 않았다.
+
 ### 6.3 `/collections/<handle>/products.json`의 근거
 
 Shopify **Ajax API 레퍼런스에 실린 경로가 아니다.** 스토어프론트가 공개로 여는 관행적 경로다.
