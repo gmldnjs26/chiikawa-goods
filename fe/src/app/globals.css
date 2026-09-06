@@ -2,55 +2,97 @@
 
 /*
  * 시맨틱 토큰만 쓴다. 컴포넌트에서 raw hex를 쓰지 않는다.
- * (.claude/agents/frontend-dev.md — Apple HIG 기준)
+ * 값은 디자인 플랜 v1 (2026-09-06, docs/design-brief.md → Claude Design 프로젝트).
+ * 회색은 전부 움버 쪽으로 기운 웜 그레이(hue 70°). 액센트는 움버 — 링크 · 탭 인디케이터 · 필터 선택 3곳에만.
  */
 :root {
-  --background: #ffffff;
-  --surface: #f2f2f7; /* iOS systemGroupedBackground */
-  --separator: #c6c6c8;
+  color-scheme: light;
+  --background: #f4f2ee;
+  --surface: #ffffff;
+  --fill: #ece9e3; /* 정보 칩 · 完売 뱃지 배경 */
+  --separator: #e3dfd8;
+  --border: #d2cdc5; /* 칩 테두리 · 完売 레일 */
 
-  --label: #000000;
-  --label-secondary: #3c3c4399; /* 60% */
-  --label-tertiary: #3c3c434d; /* 30% */
+  --label: #1c1a17;
+  --label-secondary: #6b6660;
+  --label-tertiary: #a39e96; /* 지난 날짜 · 점선 */
+  --label-quaternary: #b8b2a9; /* 이미지 빈칸 이니셜 */
 
-  --accent: #0a84ff;
+  --accent: #7a5a2a;
 
-  /* 상태 3개. 늘리지 않는다 (docs/plan.md §3.2) */
-  --state-on-sale: #34c759;
-  --state-upcoming: #ff9f0a;
-  --state-ended: #8e8e93;
+  /* 상태색은 의미에 고정 — 판매중 green · 예정 orange · 재입고예정 blue · 종료 gray. 늘리지 않는다 */
+  --state-on-sale: #2e7d4f;
+  --state-upcoming: #c4640f;
+  --state-restock: #2f63b8;
+  --state-ended: #8e8982;
 }
 
+/*
+ * 테마 3상태: 자동(스탬프 없음 · OS를 따른다) / data-theme="light" / data-theme="dark".
+ * 다크 토큰은 두 번 정의한다 — OS 다크(명시 라이트가 아닐 때)와 명시 다크. 컴포넌트는 토큰만 본다.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
     /* 순수 검정을 쓰지 않는다 */
-    --background: #1c1c1e;
-    --surface: #2c2c2e;
-    --separator: #38383a;
+    --background: #1b1a18;
+    --surface: #242220;
+    --fill: #2e2b27;
+    --separator: #363330;
+    --border: #4a4640;
 
-    --label: #f2f2f7;
-    --label-secondary: #ebebf599;
-    --label-tertiary: #ebebf54d;
+    --label: #edeae4;
+    --label-secondary: #a39e96;
+    --label-tertiary: #7c776f;
+    --label-quaternary: #5e5a54;
 
-    --accent: #0a84ff;
+    --accent: #c9a06a;
 
     /* 다크에서 채도를 낮춘다 */
-    --state-on-sale: #30d158;
-    --state-upcoming: #ffd60a;
-    --state-ended: #98989d;
+    --state-on-sale: #6fbf8e;
+    --state-upcoming: #e8975a;
+    --state-restock: #7fa6e6;
+    --state-ended: #6e6a64;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  /* 순수 검정을 쓰지 않는다 */
+  --background: #1b1a18;
+  --surface: #242220;
+  --fill: #2e2b27;
+  --separator: #363330;
+  --border: #4a4640;
+
+  --label: #edeae4;
+  --label-secondary: #a39e96;
+  --label-tertiary: #7c776f;
+  --label-quaternary: #5e5a54;
+
+  --accent: #c9a06a;
+
+  /* 다크에서 채도를 낮춘다 */
+  --state-on-sale: #6fbf8e;
+  --state-upcoming: #e8975a;
+  --state-restock: #7fa6e6;
+  --state-ended: #6e6a64;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-fill: var(--fill);
   --color-separator: var(--separator);
+  --color-border: var(--border);
   --color-label: var(--label);
   --color-label-secondary: var(--label-secondary);
   --color-label-tertiary: var(--label-tertiary);
+  --color-label-quaternary: var(--label-quaternary);
   --color-accent: var(--accent);
   --color-on-sale: var(--state-on-sale);
   --color-upcoming: var(--state-upcoming);
+  --color-restock: var(--state-restock);
   --color-ended: var(--state-ended);
 
   /* 시스템 폰트 스택. 웹폰트를 로드하지 않는다 */
@@ -63,7 +105,38 @@ body {
   background: var(--background);
   color: var(--label);
   font-family: var(--font-sans);
-  /* 일본어 본문 기준 */
-  font-size: 16px;
-  line-height: 1.6;
+  /* 타입 스케일 4단계: 20 / 16 / 14 / 12. 본문 기본은 15 */
+  font-size: 15px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  a {
+    color: var(--accent);
+  }
+}
+
+/*
+ * 테마 전환의 View Transition. 기본 크로스페이드를 끄고, 새 화면이 클릭 지점에서 원으로 퍼진다
+ * (clip-path 애니메이션은 ThemeToggle이 Web Animations API로 건다). 옛 화면은 아래에 그대로 둔다.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+/* 모션은 상태 변화에만. 줄여 달라면 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

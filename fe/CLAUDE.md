@@ -9,7 +9,7 @@
 | **`fe/CLAUDE.md`** (이 문서) | **구조 · 레이어 경계 · 렌더링 · 데이터 흐름** |
 | `.claude/agents/frontend-dev.md` | 디자인(Apple HIG) · 화면 규약 · 공식문서 URL |
 | `docs/plan.md` §6 | 화면 사양 (무엇을 보여주는가) |
-| `prototype/index.html` | 레이아웃·뱃지·필터의 검증된 원안 |
+| `prototype/index.html` | 정보 구조의 원안. 시각은 디자인 플랜 v1이 대체 (`frontend-dev.md` §디자인) |
 | 이 문서 맨 아래 마커 블록 | **Next.js가 관리한다.** 설치된 버전의 문서 위치를 가리킨다 |
 
 같은 규칙을 두 곳에 쓰지 않는다. 디자인 질문은 `frontend-dev.md`로 간다.
@@ -51,17 +51,22 @@
 ```
 fe/
 ├── src/
-│   ├── app/                  라우트. 데이터 페치 + 화면 조립만
+│   ├── app/                  라우트. 데이터 페치 + 화면 조립만 (`home-sections.tsx`는 홈 · 전용 페이지가 공유하는 조립)
 │   ├── modules/              도메인 단위
-│   │   ├── _common/          도메인 없는 UI 원소 (뱃지 · 칩 · 섹션 헤더)
+│   │   ├── _common/          도메인 없는 UI 원소 (칩 · 섹션 · 탭) + 화면 어휘 (`consts.ts`)
+│   │   ├── item/             카드 · 뱃지 판정(`badge.ts`) · 홈 필터 · 아카이브 목록
+│   │   ├── calendar/         사건 목록 · 달 이동
 │   │   └── <도메인>/
 │   │       ├── components/
 │   │       ├── hooks/        클라이언트 훅. 없으면 만들지 않는다
 │   │       ├── types.ts
 │   │       └── consts.ts
-│   └── lib/                  도메인 없는 인프라 · 순수함수
+│   └── lib/                  도메인 없는 인프라 · 순수함수 (`schema.ts` · `api.ts` · `format.ts`)
+├── test/fixtures/            API 응답 픽스처 JSON (홈 · 캘린더 · 아카이브)
 └── (설정 파일들)
 ```
+
+홈 · 아카이브는 별도 도메인이 아니다 — 둘 다 `item` 카드의 목록이라 `item/`에 있다. 화면 조립은 `app/`이 한다.
 
 - **`modules`다.** `features`가 아니다. `tomomachi-fe`와 같은 이름을 쓴다 — 혼자 두 코드베이스를 오간다
 - **`lib/`와 `utils/`를 나누지 않는다.** `tomomachi`는 나눠 놨고 경계가 흐려졌다. `lib/` 하나다
@@ -95,7 +100,13 @@ app/  →  modules/<도메인>/  →  modules/_common/  →  lib/
 
 ```
 be/ 읽기 API  →  app/의 서버 컴포넌트  →  화면
+              →  app/api/archive (라우트 핸들러)  →  아카이브 「もっと見る」 (브라우저)
 ```
+
+호출은 `lib/api.ts` 하나다. `API_BASE_URL`은 서버에만 있다 — 브라우저에 노출하지 않는다.
+브라우저에서 나가는 요청은 아카이브 페이지네이션뿐이고 `app/api/archive`가 중계한다.
+`API_BASE_URL=fixture`면 `test/fixtures/*.json`을 읽는다 — API 없이 화면을 그리는 개발용이다.
+홈·아카이브는 `dynamic = 'force-dynamic'`이다. 빌드(CI) 시점에 API가 없기 때문이고, `fetch`의 `revalidate`가 API 부하를 막는다.
 
 ### 경계에서 zod로 파싱한다
 
@@ -155,7 +166,8 @@ JSX 안에서 판정하면 테스트할 수 없다. 아래 2개는 **순수함�
 `badge.ts`·`format.ts`에 테스트를 붙인다. JSX가 없는 순수함수다.
 **러너는 `be/`와 같은 jest다.** v0에 컴포넌트 테스트 스택을 넣지 않는다.
 
-> 아직 `fe/`에 jest가 설치돼 있지 않다. 첫 판정 로직을 쓸 때 함께 넣는다.
+`npm test`. 설정은 `jest.config.mjs` — `.ts` config는 ts-node를 요구해서 `.mjs`다. 테스트 파일은 `*.spec.ts`를 소스 옆에 둔다 (`be/`와 같다).
+픽스처 JSON은 `test/fixtures/`. 스키마 테스트가 그것을 통과시킨다 — 계약이 바뀌면 픽스처도 같이 바꾼다.
 
 ---
 

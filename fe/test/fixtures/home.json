@@ -1,0 +1,386 @@
+{
+  "generatedAt": "2026-09-06T03:00:00.000Z",
+  "today": "2026-09-06",
+  "onSale": [
+    {
+      "id": "101",
+      "title": "ちいかわ ころんとぬいぐるみ ハチワレ",
+      "officialUrl": "https://chiikawamarket.jp/products/101",
+      "imageUrl": null,
+      "price": 2970,
+      "priceVaries": false,
+      "brand": {
+        "code": "chiikawa_market",
+        "label": "ちいかわマーケット"
+      },
+      "channel": "online_official",
+      "region": "online",
+      "acquisition": "fixed",
+      "seriesTotal": null,
+      "labels": [],
+      "status": "ON_SALE",
+      "statusAt": "2026-09-05T02:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-09-05",
+      "timeEstimated": true,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [],
+      "sources": [
+        {
+          "code": "chiikawamarket",
+          "name": "ちいかわマーケット",
+          "url": "https://chiikawamarket.jp/products/101",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    },
+    {
+      "id": "102",
+      "title": "ちいかわ でかぬいぐるみ",
+      "officialUrl": "https://chiikawamarket.jp/products/102",
+      "imageUrl": null,
+      "price": 4950,
+      "priceVaries": false,
+      "brand": {
+        "code": "chiikawa_market",
+        "label": "ちいかわマーケット"
+      },
+      "channel": "online_official",
+      "region": "online",
+      "acquisition": "fixed",
+      "seriesTotal": null,
+      "labels": [],
+      "status": "ON_SALE",
+      "statusAt": "2026-09-05T02:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-07-10",
+      "timeEstimated": true,
+      "availableUntil": null,
+      "restockedAt": "2026-09-05T02:00:00.000Z",
+      "schedules": [],
+      "sources": [
+        {
+          "code": "chiikawamarket",
+          "name": "ちいかわマーケット",
+          "url": "https://chiikawamarket.jp/products/102",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    },
+    {
+      "id": "103",
+      "title": "ちいかわポケット アクリルスタンド 第3弾",
+      "officialUrl": "https://chiikawamarket.jp/products/103",
+      "imageUrl": null,
+      "price": 880,
+      "priceVaries": false,
+      "brand": {
+        "code": "pocket",
+        "label": "ちいかわポケット"
+      },
+      "channel": "online_official",
+      "region": "online",
+      "acquisition": "random",
+      "seriesTotal": 8,
+      "labels": [
+        "川越店限定"
+      ],
+      "status": "ON_SALE",
+      "statusAt": "2026-09-04T02:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-09-04",
+      "timeEstimated": true,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [],
+      "sources": [
+        {
+          "code": "chiikawamarket",
+          "name": "ちいかわマーケット",
+          "url": "https://chiikawamarket.jp/products/103",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    },
+    {
+      "id": "104",
+      "title": "ちいかわ ラバーマスコット",
+      "officialUrl": "https://example.jp/press/104",
+      "imageUrl": null,
+      "price": 500,
+      "priceVaries": false,
+      "brand": null,
+      "channel": "gacha",
+      "region": "national",
+      "acquisition": "random",
+      "seriesTotal": 6,
+      "labels": [],
+      "status": "ON_SALE",
+      "statusAt": "2026-09-01T02:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-09-01",
+      "timeEstimated": false,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [],
+      "sources": [
+        {
+          "code": "press",
+          "name": "プレスリリース",
+          "url": "https://example.jp/press/104",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    },
+    {
+      "id": "105",
+      "title": "もぐもぐ本舗 秋のクッキー缶",
+      "officialUrl": "https://mogumogu-honpo.jp/products/105",
+      "imageUrl": "https://cdn.example.jp/cookie.jpg",
+      "price": 1620,
+      "priceVaries": true,
+      "brand": {
+        "code": "mogumogu",
+        "label": "もぐもぐ本舗"
+      },
+      "channel": "konbini",
+      "region": "national",
+      "acquisition": "fixed",
+      "seriesTotal": null,
+      "labels": [],
+      "status": "ON_SALE",
+      "statusAt": "2026-08-30T02:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-08-30",
+      "timeEstimated": true,
+      "availableUntil": "2026-09-12",
+      "restockedAt": null,
+      "schedules": [],
+      "sources": [
+        {
+          "code": "mogumogu",
+          "name": "もぐもぐ本舗",
+          "url": "https://mogumogu-honpo.jp/products/105",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    }
+  ],
+  "upcoming": [
+    {
+      "id": "202",
+      "title": "ちいかわポケット 第4弾",
+      "officialUrl": "https://chiikawamarket.jp/products/202",
+      "imageUrl": null,
+      "price": 990,
+      "priceVaries": false,
+      "brand": {
+        "code": "pocket",
+        "label": "ちいかわポケット"
+      },
+      "channel": "online_official",
+      "region": "online",
+      "acquisition": "random",
+      "seriesTotal": 10,
+      "labels": [],
+      "status": "UPCOMING",
+      "statusAt": "2026-09-02T09:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-09-06",
+      "timeEstimated": true,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [
+        {
+          "kind": "release",
+          "date": "2026-09-06",
+          "text": null,
+          "undecided": false,
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ],
+      "sources": [
+        {
+          "code": "chiikawamarket",
+          "name": "ちいかわマーケット",
+          "url": "https://chiikawamarket.jp/products/202",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    },
+    {
+      "id": "201",
+      "title": "【予約】ちいかわ 秋の新作 12点",
+      "officialUrl": "https://chiikawamarket.jp/products/201",
+      "imageUrl": null,
+      "price": null,
+      "priceVaries": false,
+      "brand": {
+        "code": "chiikawa_market",
+        "label": "ちいかわマーケット"
+      },
+      "channel": "online_official",
+      "region": "online",
+      "acquisition": "fixed",
+      "seriesTotal": null,
+      "labels": [],
+      "status": "UPCOMING",
+      "statusAt": "2026-09-03T09:00:00.000Z",
+      "preorderOn": "2026-09-09",
+      "releaseOn": "2026-09-19",
+      "timeEstimated": true,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [
+        {
+          "kind": "preorder",
+          "date": "2026-09-09",
+          "text": null,
+          "undecided": false,
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        },
+        {
+          "kind": "release",
+          "date": "2026-09-19",
+          "text": null,
+          "undecided": false,
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ],
+      "sources": [
+        {
+          "code": "chiikawamarket",
+          "name": "ちいかわマーケット",
+          "url": "https://chiikawamarket.jp/products/201",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    },
+    {
+      "id": "203",
+      "title": "一番くじ ちいかわ ～秋のおでかけ～",
+      "officialUrl": "https://example.jp/press/203",
+      "imageUrl": null,
+      "price": 790,
+      "priceVaries": false,
+      "brand": {
+        "code": "ichiban_kuji",
+        "label": "一番くじ"
+      },
+      "channel": "kuji",
+      "region": "national",
+      "acquisition": "random",
+      "seriesTotal": 72,
+      "labels": [],
+      "status": "UPCOMING",
+      "statusAt": "2026-09-01T09:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-09-13",
+      "timeEstimated": false,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [
+        {
+          "kind": "release",
+          "date": "2026-09-13",
+          "text": null,
+          "undecided": false,
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ],
+      "sources": [
+        {
+          "code": "press",
+          "name": "プレスリリース",
+          "url": "https://example.jp/press/203",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    }
+  ],
+  "waitable": [
+    {
+      "id": "301",
+      "title": "ちいかわ ふわふわクッション",
+      "officialUrl": "https://chiikawamarket.jp/products/301",
+      "imageUrl": null,
+      "price": 3850,
+      "priceVaries": false,
+      "brand": {
+        "code": "chiikawa_market",
+        "label": "ちいかわマーケット"
+      },
+      "channel": "online_official",
+      "region": "online",
+      "acquisition": "fixed",
+      "seriesTotal": null,
+      "labels": [],
+      "status": "ENDED",
+      "statusAt": "2026-08-10T02:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-07-20",
+      "timeEstimated": true,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [
+        {
+          "kind": "restock",
+          "date": "2026-09-15",
+          "text": null,
+          "undecided": false,
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ],
+      "sources": [
+        {
+          "code": "chiikawamarket",
+          "name": "ちいかわマーケット",
+          "url": "https://chiikawamarket.jp/products/301",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    },
+    {
+      "id": "302",
+      "title": "ナガノマーケット トートバッグ",
+      "officialUrl": "https://nagano-market.jp/products/302",
+      "imageUrl": null,
+      "price": 2200,
+      "priceVaries": false,
+      "brand": {
+        "code": "nagano_market",
+        "label": "ナガノマーケット"
+      },
+      "channel": "online_official",
+      "region": "online",
+      "acquisition": "fixed",
+      "seriesTotal": null,
+      "labels": [],
+      "status": "ENDED",
+      "statusAt": "2026-08-05T02:00:00.000Z",
+      "preorderOn": null,
+      "releaseOn": "2026-07-01",
+      "timeEstimated": true,
+      "availableUntil": null,
+      "restockedAt": null,
+      "schedules": [
+        {
+          "kind": "restock",
+          "date": null,
+          "text": "9月下旬",
+          "undecided": false,
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ],
+      "sources": [
+        {
+          "code": "naganomarket",
+          "name": "ナガノマーケット",
+          "url": "https://nagano-market.jp/products/302",
+          "observedAt": "2026-09-05T12:01:13.559Z"
+        }
+      ]
+    }
+  ]
+}
