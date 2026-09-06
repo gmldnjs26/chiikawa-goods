@@ -83,6 +83,18 @@ export class Source {
   @Column({ type: 'integer', nullable: true })
   silenceAlertSec!: number | null;
 
+  /**
+   * 게시 게이트 (docs/read-api.md §6). `enabled`와 다른 축이다 —
+   * `enabled`는 「요청을 보낼 것인가」, 이쪽은 「화면에 낼 것인가」.
+   * NULL이면 이 소스에 연결된 item은 어느 응답에도 나오지 않는다
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  publishAllowedAt!: Date | null;
+
+  /** 이미지 인라인 참조 허가. NULL이면 `image_url`을 응답에서 뺀다 — 카드는 선다 */
+  @Column({ type: 'timestamptz', nullable: true })
+  imageAllowedAt!: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 

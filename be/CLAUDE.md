@@ -18,18 +18,28 @@
 
 ---
 
-## 1. 진입점은 CLI다. HTTP 서버가 아니다
+## 1. 진입점은 하나다. 첫 인자가 모드를 정한다
 
-`src/main.ts`는 `CommandFactory.run()`이다. **`listen()`이 없다.**
-Cloud Run Job이 커맨드 하나를 실행하고 프로세스가 끝난다.
+`src/main.ts` 하나. 소스 하나 → 이미지 하나 → **같은 이미지를 첫 인자만 바꿔** 여러 대상에 배포한다.
+
+| 첫 인자 | 무엇 | 프로세스 | 배포 |
+| --- | --- | --- | --- |
+| `collect` · `normalize` · `purge-payload` · `health` | nest-commander 커맨드 (`CommandFactory.run`) | 돌고 **exit 0** | Cloud Run **Job**. Scheduler가 깨운다 |
+| `api` | `NestFactory.create(AppModule).listen($PORT)` | 상주 | Cloud Run **Service** |
 
 ```
 npm run cli <커맨드>     로컬. ts-node로 src/main.ts 직접 실행
-node dist/main <커맨드>  프로덕션. nest build 결과
+npm run api              = npm run cli api. API_PORT (기본 3001)
+node dist/main <커맨드>  프로덕션. Job은 collect 등, Service는 api
 ```
 
-- **커맨드는 끝나야 한다.** 끝나지 않는 커맨드는 Job에서 과금이 멈추지 않는다
-- 상주 서버가 필요한 건 읽기 API뿐이다 (에픽 E). **그건 별 진입점이고 Job과 섞지 않는다**
+- **커맨드는 끝나야 한다.** 끝나지 않는 커맨드는 Job에서 과금이 멈추지 않는다. `api`만 상주한다
+- **수집을 기동하는 라우트를 만들지 않는다.** 수집 표면은 인터넷에 없다 (`docs/tech-stack.md` §2.2).
+  같은 `AppModule`에 수집 코드가 실려 있어도 그걸 부르는 HTTP 경로가 없으면 표면이 아니다.
+  라우트는 `api/`의 읽기 3개뿐이다 ([[read-api]])
+- **부팅 시 DB 행을 검증하는 `onModuleInit`을 두지 않는다.** 한 모듈 트리를 Job과 Service가 같이 쓰므로,
+  `source.config` 한 줄이 깨졌다고 읽기 API가 안 뜨면 안 된다. 검증은 그걸 쓰는 커맨드가
+  `load()` · `loadAll()`을 부를 때 한다. `health`는 명시적으로 `loadAll()`을 불러 깨진 행을 잡는다
 - 진단 커맨드(`health`)는 **외부 요청 0건**이어야 한다
 
 ## 2. 디렉토리
@@ -38,8 +48,11 @@ node dist/main <커맨드>  프로덕션. nest build 결과
 
 ```
 be/src/
-├── main.ts                 CommandFactory. HTTP 서버를 띄우지 않는다
-├── app.module.ts           ConfigModule + TypeOrmModule + 도메인 모듈
+├── main.ts                 첫 인자로 분기 — `api`면 listen, 아니면 CommandFactory (§1)
+├── app.module.ts           ConfigModule + TypeOrmModule + 도메인 모듈 + 커맨드 + 컨트롤러. 트리 하나
+├── api/                    HTTP 어댑터. 라우트 · 쿼리 파싱 · HTTP 오류 변환만
+│   ├── _common/            zod 검증 파이프
+│   └── <화면>/*.controller.ts
 ├── commands/               진단용 커맨드
 ├── config/                 DataSource · 환경변수
 ├── migrations/             migration. 평면. 하위 디렉토리 없음
@@ -55,6 +68,9 @@ be/src/
 │       └── <도메인>.module.ts
 └── batch/<잡>/             nest-commander 배치 잡. 락 · 실행 기록 · 게이트 · 순회
 ```
+
+`api/`와 `batch/`는 같은 층이다 — **진입 어댑터**. 도메인을 호출할 뿐 갖지 않는다.
+컨트롤러가 `Repository`를 주입받으면 잘못됐다. 조립은 `modules/catalog/`가 한다.
 
 - **엔티티는 도메인 모듈 안에 둔다.** `database/entities/` 같은 **전역 레이어 분할을 하지 않는다**.
   나누는 건 **모듈 안에서**다
@@ -90,8 +106,7 @@ _common/<인프라>/
 └── <이름>.module.ts
 ```
 
-- **`controller/`도 `entities/`도 없다.** 라우트가 없고(진입점이 CLI다 §1) 테이블도 없다.
-  읽기 API를 만들 때 그쪽 모듈에 `controller`·`dto`가 생긴다
+- **`controller/`도 `entities/`도 없다.** 라우트는 `api/`에, 테이블은 도메인 모듈에 있다 (§2)
 - **`dto/`는 클래스가 아니라 `interface`다.** `class-validator`는 HTTP 요청 본문을 검증할 때
   쓴다. 여기 값은 우리가 만들어 넘기는 것이라 검증할 경계가 아니다
 - **`_common/`은 특정 도메인을 모른다.** 도메인 타입을 import하면 의존 방향이 뒤집힌다.
@@ -102,7 +117,8 @@ _common/<인프라>/
 ### 의존 방향
 
 ```
-batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
+batch/<잡>/  ┐
+api/<화면>/  ┴→  modules/<도메인>/  →  modules/_common/  →  config/
 ```
 
 - **도메인끼리 호출한다.** 막지 않는다 — NestJS 모듈 시스템(`imports`/`exports`)이
@@ -112,7 +128,9 @@ batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
   지금 `mentions` → `collectors`(`CollectedMention`) 한 곳이 역방향이다 —
   `import type`이라 런타임 순환은 없지만 **저장 층이 수집 층을 알 이유는 없다.**
   건드릴 일이 생기면 저장 층이 자기 입력 형태를 갖는 쪽으로 정리한다
-- `modules/`는 `batch/`를 모른다. 수집 잡이 도메인을 쓰는 방향만 있다
+- `modules/`는 `batch/`도 `api/`도 모른다. 진입 어댑터가 도메인을 쓰는 방향만 있다
+- **`modules/catalog/`는 읽기 모델이다.** `item` · `brand` · `item_mention` · `status_history` ·
+  `item_current_schedule`을 **읽기만** 한다. 여기서 쓰기가 시작되면 경계가 틀린 것이다
 - **어댑터는 도메인이다.** `modules/collectors/`에 산다 — `batch/`가 아니다.
   경계는 **"무엇을 긁는가"(도메인) vs "언제·어떻게 돌리는가"(잡)**다.
   `pg_advisory_lock` · `collection_run` 기록 · 주기 게이트 · 소스 단위 실패 격리는
@@ -128,7 +146,7 @@ batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
 
 `tsc`는 출력 JS의 import 문자열을 다시 쓰지 않는다. 그래서 진입점마다 해석기가 따로 붙어 있다 —
 `build`는 `tsc-alias`, `cli`·`migration:*`은 `-r tsconfig-paths/register`, `test`는 jest `moduleNameMapper`.
-**새 진입점을 추가하면 그 진입점에도 해석기를 붙인다.** 안 붙이면 런타임에만 깨진다
+**새 실행 경로를 추가하면 거기에도 해석기를 붙인다.** 안 붙이면 런타임에만 깨진다
 
 ## 3. 스키마는 migration만이 바꾼다
 
@@ -177,7 +195,7 @@ batch/<잡>/  →  modules/<도메인>/  →  modules/_common/  →  config/
 `source.config`는 **DB 행에 든 임의 JSON**이다. 타입 단정으로 받지 않는다.
 
 - **zod로 파싱한다.** 스키마가 유일한 타입 출처다 (`z.infer`)
-- **로드 시점에 터진다.** `config`가 DB 행이니 "부팅 시점"이란 레지스트리가 행을 읽는 순간이다.
+- **로드 시점에 터진다.** 레지스트리가 행을 읽는 순간(`load()` · `loadAll()`)이다 — 프로세스 부팅이 아니다 (§1).
   어댑터 안에서 늦게 파싱하면 요건을 위반하면서 맞는 것처럼 보인다
 - **부분 로드를 하지 않는다.** 소스 하나가 깨지면 던진다
 - 정규식 필드는 **컴파일 가능한지까지** 본다. 못 쓰는 정규식을 수집 중에 발견하지 않는다
@@ -211,7 +229,7 @@ cat be/node_modules/typeorm/decorator/columns/PrimaryGeneratedColumn.d.ts
 
 ## 6. 하지 않는 것
 
-- **`main.ts`에서 HTTP 서버를 띄우지 않는다** (§1)
+- **`api` 외의 모드에서 `listen()`하지 않는다** (§1)
 - **엔티티를 `database/entities/`류 레이어 디렉토리에 모으지 않는다** (§2)
 - **`synchronize: true`를 쓰지 않는다.** 로컬에서도 안 쓴다 — migration이 검증되지 않는다
 - **`getRepository()` 같은 전역 함수를 쓰지 않는다.** TypeORM 1에 없다. DI로 받는다

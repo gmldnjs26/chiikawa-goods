@@ -13,6 +13,7 @@
 | `docs/db-schema.md` | 테이블 · 제약 · 인덱스 |
 | `docs/source-mapping.md` | 소스 원문 → 컬럼 매핑 · 태그 인벤토리 |
 | `docs/tech-stack.md` | 기술 선정 근거 · 착수 전 검증 항목 |
+| `docs/read-api.md` | 읽기 API 계약 · 응답 형태 · 섹션 판정 · 게시 게이트 |
 | `be/CLAUDE.md` | `be/` 디렉토리 · 레이어 경계 · 진입점 · 스키마 변경 절차 |
 | `fe/CLAUDE.md` | `fe/` 구조 · 레이어 경계 · 렌더링 · 데이터 흐름 |
 
@@ -32,6 +33,7 @@
 | `source-mapping.md` | 매핑 코드 · `config` 값 | 실측 근거 · 함정 목록 · 태그 인벤토리 |
 | `data-collection-design.md` | 어댑터 구현 | 층 구분 · 규범 |
 | `tech-stack.md` | `package.json` · Terraform | 선정 근거 · 버린 선택지 |
+| `read-api.md` | **없음** — 계약은 코드가 대체하지 못한다. `fe/`와 `be/` 양쪽이 이 문서를 본다 | 전부 |
 | `plan.md` | **없음** | 전부. 코드가 대체할 수 없는 유일한 문서 |
 
 ## 개발 순서
@@ -106,6 +108,7 @@ scheduled_event  미래 예정     append-only
 | `frontend-dev` | Next.js 화면 (`fe/`) |
 | `source-investigator` | 소스 실지 조사 (읽기 전용) |
 | `compliance-reviewer` | 크롤러 규범 · 정책 위반 검사 (머지 전) |
+| `code-reviewer` | 버그 · 레이어 위반 · 문서↔코드 불일치 검사 (머지 전) |
 | `docs-keeper` | 설계 문서 정합성 유지 |
 
-수집 코드를 건드렸으면 머지 전에 `compliance-reviewer`를 돌린다.
+머지 전에 `code-reviewer`를 돌린다. 수집 코드를 건드렸으면 `compliance-reviewer`도 돌린다.

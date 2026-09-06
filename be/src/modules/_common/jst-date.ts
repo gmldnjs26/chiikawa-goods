@@ -23,3 +23,29 @@ export function fromJstMidnight(date: string): Date {
 export function isAfterObservation(date: string, observedAt: Date): boolean {
   return date > toJstCalendarDate(observedAt);
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** `YYYY-MM-DD`가 실재하는 달력일인가. `2026-02-30`은 `Date`가 3월로 넘겨 버리므로 왕복으로 잡는다 */
+export function isCalendarDate(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const parsed = fromJstMidnight(date);
+  return !Number.isNaN(parsed.getTime()) && toJstCalendarDate(parsed) === date;
+}
+
+/** JST 달력일에 `days`를 더한다. 음수 가능 */
+export function addDays(date: string, days: number): string {
+  return toJstCalendarDate(new Date(fromJstMidnight(date).getTime() + days * DAY_MS));
+}
+
+/** `to - from` 일수. 같은 날은 0 */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((fromJstMidnight(to).getTime() - fromJstMidnight(from).getTime()) / DAY_MS);
+}
+
+/** 그 달의 1일과 말일 */
+export function monthBounds(date: string): { from: string; to: string } {
+  const from = `${date.slice(0, 7)}-01`;
+  const nextMonth = addDays(`${date.slice(0, 7)}-28`, 4);
+  return { from, to: addDays(`${nextMonth.slice(0, 7)}-01`, -1) };
+}

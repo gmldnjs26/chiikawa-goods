@@ -1,13 +1,21 @@
 import { Command, CommandRunner } from 'nest-commander';
 import { DataSource } from 'typeorm';
 
+import { SourcesService } from '@/modules/sources/sources.service';
+
 /**
  * 부팅 확인용. DB에 붙고 상태를 찍고 끝난다.
  * 외부 사이트로 요청을 보내지 않는다.
+ *
+ * `source.config`가 깨진 행이 있으면 여기서 죽는다 — 의도된 동작이다 (be/CLAUDE.md §6).
+ * 부팅 훅이 아니라 이 커맨드가 명시적으로 레지스트리를 읽는다 (§1).
  */
-@Command({ name: 'health', description: 'DB 접속과 마이그레이션 상태를 확인한다' })
+@Command({ name: 'health', description: 'DB 접속 · 마이그레이션 · source.config를 확인한다' })
 export class HealthCommand extends CommandRunner {
-  constructor(private readonly dataSource: DataSource) {
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly registry: SourcesService,
+  ) {
     super();
   }
 
@@ -16,6 +24,8 @@ export class HealthCommand extends CommandRunner {
     console.log(`db       : ${version}`);
     console.log(`database : ${describeTarget(this.dataSource)}`);
     console.log(`migration: ${await describeMigrations(this.dataSource)}`);
+    const sources = await this.registry.loadAll();
+    console.log(`source   : ${sources.length}건 config 정상`);
   }
 }
 

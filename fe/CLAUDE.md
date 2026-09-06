@@ -91,7 +91,7 @@ app/  →  modules/<도메인>/  →  modules/_common/  →  lib/
 
 **`fe/`는 데이터베이스를 모른다.** `pg`를 설치하지 않는다. SQL을 쓰지 않는다.
 테이블명·뷰명(`mention`, `item_current_schedule` 등)이 `fe/` 코드에 등장하면 잘못됐다.
-근거는 `docs/tech-stack.md` §2.8.
+근거는 `docs/tech-stack.md` §2.8. **응답 형태의 진실은 `docs/read-api.md`다** — `lib/schema.ts`의 zod가 그것을 그대로 옮긴다.
 
 ```
 be/ 읽기 API  →  app/의 서버 컴포넌트  →  화면
