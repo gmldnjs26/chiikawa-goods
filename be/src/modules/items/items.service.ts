@@ -140,6 +140,7 @@ export class ItemsService {
             tags: labelSource(mention.rawPayload),
             collections: item.collections,
             title: item.title,
+            source: source.row.code,
           },
           candidates,
         );

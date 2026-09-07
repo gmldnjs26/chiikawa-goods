@@ -33,7 +33,13 @@
           "url": "https://chiikawamarket.jp/products/101",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "1",
+        "kind": "release",
+        "date": "2026-09-05",
+        "title": null
+      }
     },
     {
       "id": "102",
@@ -66,7 +72,13 @@
           "url": "https://chiikawamarket.jp/products/102",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "2",
+        "kind": "release",
+        "date": "2026-07-10",
+        "title": null
+      }
     },
     {
       "id": "103",
@@ -101,7 +113,13 @@
           "url": "https://chiikawamarket.jp/products/103",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "3",
+        "kind": "release",
+        "date": "2026-09-04",
+        "title": null
+      }
     },
     {
       "id": "104",
@@ -131,7 +149,8 @@
           "url": "https://example.jp/press/104",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": null
     },
     {
       "id": "105",
@@ -164,7 +183,13 @@
           "url": "https://mogumogu-honpo.jp/products/105",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "4",
+        "kind": "release",
+        "date": "2026-08-30",
+        "title": null
+      }
     }
   ],
   "upcoming": [
@@ -207,7 +232,13 @@
           "url": "https://chiikawamarket.jp/products/202",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "5",
+        "kind": "release",
+        "date": "2026-09-06",
+        "title": null
+      }
     },
     {
       "id": "201",
@@ -255,7 +286,13 @@
           "url": "https://chiikawamarket.jp/products/201",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "6",
+        "kind": "preorder",
+        "date": "2026-09-09",
+        "title": null
+      }
     },
     {
       "id": "203",
@@ -296,7 +333,13 @@
           "url": "https://example.jp/press/203",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "7",
+        "kind": "release",
+        "date": "2026-09-13",
+        "title": null
+      }
     }
   ],
   "waitable": [
@@ -339,7 +382,13 @@
           "url": "https://chiikawamarket.jp/products/301",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "8",
+        "kind": "release",
+        "date": "2026-07-20",
+        "title": null
+      }
     },
     {
       "id": "302",
@@ -380,7 +429,13 @@
           "url": "https://nagano-market.jp/products/302",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "9",
+        "kind": "release",
+        "date": "2026-07-01",
+        "title": null
+      }
     }
   ]
 }

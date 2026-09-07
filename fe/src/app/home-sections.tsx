@@ -1,5 +1,6 @@
 import type { Card, HomeResponse } from '@/lib/schema';
 import type { Tone } from '@/modules/_common/components/Section';
+import { formatDropTitle } from '@/modules/_common/consts';
 import {
   type FilterableCard,
   type FilterableSection,
@@ -77,6 +78,7 @@ export function brandsOf(home: HomeResponse): { code: string; label: string }[] 
   ];
 }
 
+/** 발표 이름은 서버에서 만든다 — 필터(클라이언트)는 키와 이름만 받아 접는다 (docs/read-api.md §3.4) */
 function toFilterable(card: Card, today: string): FilterableCard {
   return {
     id: card.id,
@@ -84,6 +86,10 @@ function toFilterable(card: Card, today: string): FilterableCard {
     brandCode: card.brand?.code ?? null,
     acquisition: card.acquisition,
     region: card.region,
+    drop:
+      card.drop === null
+        ? null
+        : { id: card.drop.id, title: formatDropTitle(card.drop, card.brand) },
     node: <ItemCard card={card} today={today} />,
   };
 }

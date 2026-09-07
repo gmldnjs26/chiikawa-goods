@@ -1,3 +1,4 @@
+import type { DropKind } from '@/modules/drop-groups/entities/drop-group.entity';
 import type { Acquisition, Channel, ItemStatus } from '@/modules/items/entities/item.entity';
 import type { ScheduleKind } from '@/modules/scheduled-events/entities/scheduled-event.entity';
 
@@ -35,6 +36,16 @@ export interface Card {
   readonly schedules: readonly Schedule[];
   /** 출처 표기. 소스 하나에 1건 */
   readonly sources: readonly SourceRef[];
+  /** 소속 발표 (§2.5). null = 묶이지 않았다. 브랜드 미판정이면 항상 null */
+  readonly drop: Drop | null;
+}
+
+/** `drop_group` 행 그대로. `title`이 null이면 화면이 브랜드 · 날짜 · kind로 이름을 만든다 */
+export interface Drop {
+  readonly id: string;
+  readonly kind: DropKind;
+  readonly date: string | null;
+  readonly title: string | null;
 }
 
 export interface Schedule {
@@ -62,10 +73,16 @@ export interface HomeResponse {
   readonly waitable: readonly Card[];
 }
 
+/**
+ * 사건 하나 = 같은 날짜 · kind · 채널 · 브랜드의 카드 전부 (§4.0).
+ * `brand`가 null이면 접지 않은 것이고 `items`는 1건이다.
+ */
 export interface CalendarEvent {
   readonly date: string;
   readonly kind: ScheduleKind;
-  readonly item: Card;
+  readonly brand: Card['brand'];
+  /** 1건 이상. title → id 순 */
+  readonly items: readonly Card[];
 }
 
 export interface CalendarResponse {
@@ -73,7 +90,7 @@ export interface CalendarResponse {
   readonly today: string;
   readonly from: string;
   readonly to: string;
-  /** date → channel → title 순 */
+  /** date → channel → 접힌 것 먼저 → 첫 카드 title 순 */
   readonly events: readonly CalendarEvent[];
 }
 

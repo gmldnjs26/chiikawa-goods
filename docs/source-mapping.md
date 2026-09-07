@@ -290,16 +290,23 @@ variant별로 판정이 갈린다. 우리 `item`은 상품 1개 = 카드 1장이
 1) product.tags 가 brand.match_rules.tags 와 일치       → brand_id
 2) _collections 가 brand.match_rules.collections 와 일치 → brand_id
 3) product.title 이 brand.match_rules.title_patterns 와 일치 → brand_id
-4) 실패                                                  → NULL (화면에 その他)
+4) source.code 가 brand.match_rules.sources 에 있다      → brand_id
+5) 실패                                                  → NULL (화면에 その他)
 ```
 
 `match_rules` 예:
 
 ```json
-{ "tags": ["ちいかわレストラン"],
-  "collections": ["chiikawababy", "chiikawababy_"],
-  "title_patterns": ["^ちいかわ ちいかわレストラン"] }
+{ "tags": ["一番くじ"],
+  "collections": ["ichibankuji"],
+  "title_patterns": ["^一番くじ "],
+  "sources": ["bandai-kuji"] }
 ```
+
+브랜드는 **스토어 브랜드**다. `ちいかわレストラン` 같은 시리즈 태그는 브랜드 규칙이 아니라 `labels`다 (§9.3).
+
+**v0 시드는 `sources`만 쓴다** (`SeedBrands` migration). 실측(2026-09-06)에서 스토어명이 태그·컬렉션·
+제목에 한 번도 나오지 않았다 — 근거는 [[data-collection-design]] §9.4. 시리즈 태그(§9.3)는 브랜드가 아니라 `labels`다.
 
 **`vendor`를 브랜드로 쓰지 않는다.** `グレイ・パーカー・サービス`는 제조사다. 유저는 모른다.
 
@@ -693,7 +700,9 @@ PRE20260826, 販売開始前, 予約, ナガノのくま, パグ, もぐらコ�
 ぽちゃねこむーたん
 ```
 
-### 9.3 시리즈·콜라보 태그 → `brand` 초기 목록 후보
+### 9.3 시리즈·콜라보 태그 → `labels` (브랜드가 아니다)
+
+> 2026-09-07: 브랜드는 스토어 브랜드로 확정했다 ([[data-collection-design]] §9.4). 아래는 `labels` 후보다.
 
 ```
 ちいかわレストラン       まじかるちいかわ        超まじかるちいかわ

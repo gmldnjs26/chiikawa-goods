@@ -40,7 +40,13 @@
           "url": "https://mogumogu-honpo.jp/products/401",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "10",
+        "kind": "release",
+        "date": "2026-08-01",
+        "title": null
+      }
     },
     {
       "id": "402",
@@ -73,7 +79,13 @@
           "url": "https://chiikawamarket.jp/products/402",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "11",
+        "kind": "release",
+        "date": "2026-07-18",
+        "title": null
+      }
     },
     {
       "id": "403",
@@ -121,7 +133,13 @@
           "url": "https://chiikawamarket.jp/products/403",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "2",
+        "kind": "release",
+        "date": "2026-07-10",
+        "title": null
+      }
     },
     {
       "id": "404",
@@ -154,7 +172,13 @@
           "url": "https://example.jp/press/404",
           "observedAt": "2026-09-05T12:01:13.559Z"
         }
-      ]
+      ],
+      "drop": {
+        "id": "12",
+        "kind": "release",
+        "date": "2026-07-05",
+        "title": null
+      }
     }
   ],
   "nextCursor": "MjAyNi0wOC0wMVQwMjowMDowMC4wMDBafDQwNA"

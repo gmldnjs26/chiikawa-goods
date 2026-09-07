@@ -11,8 +11,7 @@ import { BrandCandidate, parseMatchRules } from './utils/match-rules';
  * 규칙이 DB에 있는 이유는 배포 없이 고치기 위해서다. 한 번의 정규화 실행 안에서는
  * 같은 규칙을 써야 하므로 **실행 시작 시 한 번 읽는다.**
  *
- * 시드는 아직 없다 — 목록과 `match_rules`가 미결정이다 (§14 #2).
- * 후보가 0개면 전부 미판정이고, 화면에는 `その他`로 나온다.
+ * 후보가 0개면 전부 미판정이고, 화면에는 `その他`로 나온다 — 시드가 빠진 DB다.
  */
 @Injectable()
 export class BrandsService {

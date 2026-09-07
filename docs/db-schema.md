@@ -196,6 +196,7 @@ CREATE TABLE brand (
 채널·상태는 반대로 거의 안 변하므로 `CHECK`로 충분하다.
 
 `brand_id`가 `NULL`이면 미판정이고, 화면에는 `その他`로 **표시한다** ([[plan]] §6.6).
+시드 5행은 `SeedBrands` migration이 진실이다. 무엇이 브랜드이고 무엇이 아닌지는 [[data-collection-design]] §9.4.
 
 ### 5.2 item
 
@@ -532,10 +533,10 @@ SELECT item_id, kind, scheduled_on, scheduled_text, undecided, observed_at
 | # | 항목 | 영향 |
 | --- | --- | --- |
 | 1 | `もぐもぐ本舗`의 예약·재입고 태그 형식 | 발매일 태그는 `2026年8月7日発売商品` 형식으로 확인됨. 예약·재입고는 표본에 없었다 → `config`를 비워 두고 검출 시 추가 |
-| 2 | `brand` 초기 목록과 `match_rules` 값 | 태그 기반으로 판정 가능함은 확인됨. 목록 자체는 미확정 |
 | 3 | 편의점·프라이즈 소스의 세금 표기 | 공식 스토어는 `税込` 확정. 다른 소스는 미확인 |
 | 4 | `category`(product_type) 값 정규화 여부 | 원문 그대로 둘지, 소수 카테고리로 매핑할지 |
 | 5 | 캐릭터 룩업 테이블 (`character`) | **에픽 C에서 만들지 않기로 했다** (2026-09-04). `label_tag_source: 'character_table'`은 참조 대상이 없으면 **캐릭터 라벨을 비운다** — 칩이 안 나올 뿐 오분류는 없다([[source-mapping]] §7.1). 목록을 정할 근거가 아직 없어 지금 만들면 추측이 된다. `labels`는 `label_tags` + `label_tags_extra`로만 채운다 |
 
 **해소됨** — `region`(도시 단위) · `drop_group` 묶음 기준(§6) · `sale_final`(제거) ·
-공식 스토어 `price_tax_included`(true 고정).
+공식 스토어 `price_tax_included`(true 고정) · `brand` 초기 목록(스토어 브랜드 5개, `SeedBrands` migration.
+판정 규칙은 [[data-collection-design]] §9.4).

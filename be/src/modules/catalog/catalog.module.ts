@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Brand } from '@/modules/brands/entities/brand.entity';
+import { DropGroup } from '@/modules/drop-groups/entities/drop-group.entity';
 import { ItemMention } from '@/modules/item-mentions/entities/item-mention.entity';
 import { Item } from '@/modules/items/entities/item.entity';
 import { ItemCurrentSchedule } from '@/modules/scheduled-events/entities/item-current-schedule.view.entity';
@@ -16,7 +17,14 @@ import { CatalogService } from './catalog.service';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Item, Brand, ItemMention, ItemCurrentSchedule, StatusHistory]),
+    TypeOrmModule.forFeature([
+      Item,
+      Brand,
+      DropGroup,
+      ItemMention,
+      ItemCurrentSchedule,
+      StatusHistory,
+    ]),
   ],
   providers: [CatalogService, CardAssemblerService],
   exports: [CatalogService],

@@ -40,14 +40,20 @@ export function byDateThenId(dateOf: (card: Card) => string | null): (a: Card, b
   };
 }
 
-/** 캘린더: date → channel(선언 순서) → title → id */
+/**
+ * 캘린더: date → channel(선언 순서) → 접힌 사건 먼저 → 첫 카드 title → id.
+ * 「51点」 한 줄이 개별 행들 사이에 묻히지 않게 접힌 것을 앞에 둔다 (docs/read-api.md §4)
+ */
 export function compareEvents(a: CalendarEvent, b: CalendarEvent): number {
   if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-  const ca = CHANNELS.indexOf(a.item.channel);
-  const cb = CHANNELS.indexOf(b.item.channel);
+  const [ia, ib] = [a.items[0], b.items[0]];
+  const ca = CHANNELS.indexOf(ia.channel);
+  const cb = CHANNELS.indexOf(ib.channel);
   if (ca !== cb) return ca - cb;
-  if (a.item.title !== b.item.title) return a.item.title < b.item.title ? -1 : 1;
-  return compareId(a.item.id, b.item.id);
+  const [fa, fb] = [a.items.length > 1 ? 0 : 1, b.items.length > 1 ? 0 : 1];
+  if (fa !== fb) return fa - fb;
+  if (ia.title !== ib.title) return ia.title < ib.title ? -1 : 1;
+  return compareId(ia.id, ib.id);
 }
 
 /** bigint 문자열. 자릿수 → 사전순 */
