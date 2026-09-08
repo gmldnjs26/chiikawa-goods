@@ -35,8 +35,11 @@ describe('픽스처가 스키마를 통과한다', () => {
     expect(log).not.toHaveBeenCalled();
     expect(events).toHaveLength(calendar.events.length);
     // 굿즈가 아니라 사건 — 같은 카드가 예약일·발매일에 두 번 나온다
-    const ids = events.map((event) => event.item.id);
+    const ids = events.flatMap((event) => event.items.map((item) => item.id));
     expect(new Set(ids).size).toBeLessThan(ids.length);
+    // 발표 단위로 접혀 온다 — 2건 이상인 사건이 있고, 미판정은 1건이다
+    expect(events.some((event) => event.items.length > 1)).toBe(true);
+    expect(events.filter((e) => e.brand === null).every((e) => e.items.length === 1)).toBe(true);
   });
 
   it('archive', () => {
@@ -66,6 +69,12 @@ describe('parseEach — 깨진 항목은 빼고 로그', () => {
   it('sources는 1건 이상 — 출처 없는 카드는 받지 않는다', () => {
     const noSource = { ...(good as object), sources: [] };
     expect(cardSchema.safeParse(noSource).success).toBe(false);
+  });
+
+  it('사건의 items는 1건 이상', () => {
+    const calendar = calendarEnvelopeSchema.parse(fixture('calendar'));
+    const event = calendar.events[0] as object;
+    expect(calendarEventSchema.safeParse({ ...event, items: [] }).success).toBe(false);
   });
 
   it('날짜는 YYYY-MM-DD만', () => {

@@ -5,11 +5,17 @@
  * 규칙 수정에 배포가 필요해지면 안 된다.
  *
  * **`vendor`를 브랜드로 쓰지 않는다.** `グレイ・パーカー・サービス`는 제조사다. 유저는 모른다.
+ *
+ * `sources`는 **소스 코드 매칭**이다 (4단계). 공식 스토어의 상품 태그에는 스토어명이 없다
+ * (2026-09-06 실측 705건 중 0건) — 그 스토어의 상품이라는 사실 자체가 브랜드의 근거다.
+ * 태그·컬렉션·제목이 전부 침묵할 때만 쓴다. 뒤에 두는 이유는 같은 스토어에서
+ * 다른 브랜드(一番くじ 등)를 태그로 판정할 여지를 남기기 위해서다.
  */
 export interface MatchRules {
   readonly tags: string[];
   readonly collections: string[];
   readonly titlePatterns: string[];
+  readonly sources: string[];
 }
 
 export interface BrandCandidate {
@@ -23,13 +29,18 @@ export interface BrandInput {
   readonly tags: readonly string[];
   readonly collections: readonly string[];
   readonly title: string;
+  /** `source.code`. 이 mention을 어느 소스에서 봤는가 */
+  readonly source: string;
 }
 
 /**
- * 태그 → 컬렉션 → 제목 순. **실패하면 `null`(미판정)이다.**
+ * 태그 → 컬렉션 → 제목 → 소스 순. **실패하면 `null`(미판정)이다.**
  * 화면에는 `その他`로 **보여준다** — 목록에서 빼지 않는다.
  */
-export function judgeBrand(input: BrandInput, candidates: readonly BrandCandidate[]): string | null {
+export function judgeBrand(
+  input: BrandInput,
+  candidates: readonly BrandCandidate[],
+): string | null {
   const tags = new Set(input.tags);
   const collections = new Set(input.collections);
 
@@ -39,6 +50,7 @@ export function judgeBrand(input: BrandInput, candidates: readonly BrandCandidat
     (rules: MatchRules) => rules.tags.some((tag) => tags.has(tag)),
     (rules: MatchRules) => rules.collections.some((handle) => collections.has(handle)),
     (rules: MatchRules) => rules.titlePatterns.some((pattern) => safeTest(pattern, input.title)),
+    (rules: MatchRules) => rules.sources.includes(input.source),
   ];
 
   const ordered = [...candidates].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -58,6 +70,7 @@ export function parseMatchRules(value: unknown): MatchRules {
     tags: stringArray(source.tags),
     collections: stringArray(source.collections),
     titlePatterns: stringArray(source.title_patterns).filter(isCompilable),
+    sources: stringArray(source.sources),
   };
 }
 
@@ -84,5 +97,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function stringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
 }

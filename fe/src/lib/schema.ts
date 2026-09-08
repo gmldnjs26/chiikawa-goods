@@ -42,6 +42,16 @@ export const sourceRefSchema = z.object({
   observedAt: z.string(),
 });
 
+export const dropKindSchema = z.enum(['preorder', 'release', 'restock', 'campaign']);
+
+/** 소속 발표 (docs/read-api.md §2.5). `title`이 null이면 화면이 브랜드 · 날짜 · kind로 이름을 만든다 */
+export const dropSchema = z.object({
+  id: z.string(),
+  kind: dropKindSchema,
+  date: calendarDateSchema.nullable(),
+  title: z.string().nullable(),
+});
+
 export const cardSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -69,12 +79,19 @@ export const cardSchema = z.object({
   /** 유효 예정 전부. 같은 kind가 2건 이상일 수 있다 — badge.ts가 판정 불가로 낸다 */
   schedules: z.array(scheduleSchema),
   sources: z.array(sourceRefSchema).min(1),
+  /** null = 묶이지 않았다. 브랜드 미판정이면 항상 null — 단독으로 낸다 */
+  drop: dropSchema.nullable(),
 });
 
+/**
+ * 사건 하나 = 같은 날짜 · kind · 채널 · 브랜드의 카드 전부 (docs/read-api.md §4.0).
+ * `brand`가 null이면 접지 않은 것이고 `items`는 1건이다.
+ */
 export const calendarEventSchema = z.object({
   date: calendarDateSchema,
   kind: scheduleKindSchema,
-  item: cardSchema,
+  brand: z.object({ code: z.string(), label: z.string() }).nullable(),
+  items: z.array(cardSchema).min(1),
 });
 
 /**
@@ -110,6 +127,8 @@ export type ScheduleKind = z.infer<typeof scheduleKindSchema>;
 export type Acquisition = z.infer<typeof acquisitionSchema>;
 export type Schedule = z.infer<typeof scheduleSchema>;
 export type SourceRef = z.infer<typeof sourceRefSchema>;
+export type DropKind = z.infer<typeof dropKindSchema>;
+export type Drop = z.infer<typeof dropSchema>;
 export type Card = z.infer<typeof cardSchema>;
 export type CalendarEvent = z.infer<typeof calendarEventSchema>;
 

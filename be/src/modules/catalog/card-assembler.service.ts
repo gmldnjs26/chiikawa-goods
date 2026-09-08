@@ -3,12 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
 import { Brand } from '@/modules/brands/entities/brand.entity';
+import { DropGroup } from '@/modules/drop-groups/entities/drop-group.entity';
 import { ItemMention } from '@/modules/item-mentions/entities/item-mention.entity';
 import { Item } from '@/modules/items/entities/item.entity';
 import { ItemCurrentSchedule } from '@/modules/scheduled-events/entities/item-current-schedule.view.entity';
 import { StatusHistory } from '@/modules/status-histories/entities/status-history.entity';
 
-import type { Card, Schedule, SourceRef } from './dto/card.dto';
+import type { Card, Drop, Schedule, SourceRef } from './dto/card.dto';
 import { summarizeRestocks } from './utils/restock';
 
 /** 카드와 함께 캘린더가 쓰는 부산물. 응답에는 실리지 않는다 */
@@ -31,13 +32,14 @@ interface SourceLinkRow {
 /**
  * `item` 행을 `Card`로 만든다 (docs/read-api.md §2). **읽기만 한다.**
  *
- * 카드 하나에 조인이 4개다 — 브랜드 · 유효 예정 · 출처 · 이력. N+1 대신 id 묶음으로 4번 읽는다.
+ * 카드 하나에 조인이 5개다 — 브랜드 · 발표 · 유효 예정 · 출처 · 이력. N+1 대신 id 묶음으로 5번 읽는다.
  * 순서는 입력 순서를 보존한다. 정렬은 호출자의 일이다.
  */
 @Injectable()
 export class CardAssemblerService {
   constructor(
     @InjectRepository(Brand) private readonly brands: Repository<Brand>,
+    @InjectRepository(DropGroup) private readonly drops: Repository<DropGroup>,
     @InjectRepository(ItemMention) private readonly links: Repository<ItemMention>,
     @InjectRepository(ItemCurrentSchedule)
     private readonly schedules: Repository<ItemCurrentSchedule>,
@@ -48,8 +50,9 @@ export class CardAssemblerService {
     if (items.length === 0) return [];
     const ids = items.map((item) => item.id);
 
-    const [brands, schedules, links, histories] = await Promise.all([
+    const [brands, drops, schedules, links, histories] = await Promise.all([
       this.loadBrands(items),
+      this.loadDrops(items),
       this.schedules.find({ where: { itemId: In(ids) }, order: { observedAt: 'ASC' } }),
       this.loadSourceLinks(ids),
       // 전이 판정은 순서에 의존한다 (utils/restock.ts)
@@ -71,6 +74,7 @@ export class CardAssemblerService {
         card: toCard(
           item,
           item.brandId === null ? null : (brands.get(item.brandId) ?? null),
+          item.dropId === null ? null : (drops.get(item.dropId) ?? null),
           (schedulesByItem.get(item.id) ?? []).map(toSchedule),
           sourceRows,
           restocks.restockedAt,
@@ -84,6 +88,13 @@ export class CardAssemblerService {
     const ids = [...new Set(items.map((item) => item.brandId).filter((id) => id !== null))];
     if (ids.length === 0) return new Map();
     const rows = await this.brands.find({ where: { id: In(ids) } });
+    return new Map(rows.map((row) => [row.id, row]));
+  }
+
+  private async loadDrops(items: readonly Item[]): Promise<Map<string, DropGroup>> {
+    const ids = [...new Set(items.map((item) => item.dropId).filter((id) => id !== null))];
+    if (ids.length === 0) return new Map();
+    const rows = await this.drops.find({ where: { id: In(ids) } });
     return new Map(rows.map((row) => [row.id, row]));
   }
 
@@ -120,6 +131,7 @@ export class CardAssemblerService {
 function toCard(
   item: Item,
   brand: Brand | null,
+  drop: DropGroup | null,
   schedules: Schedule[],
   sourceRows: readonly SourceLinkRow[],
   restockedAt: Date | null,
@@ -150,7 +162,14 @@ function toCard(
     restockedAt: restockedAt?.toISOString() ?? null,
     schedules,
     sources: sourceRows.map(toSourceRef),
+    // 미판정은 묶지 않는다는 계약(§2.5)을 여기서도 지킨다 — 수동 묶음이 미판정에 붙어도 화면에는 단독이다
+    drop: drop === null || brand === null ? null : toDrop(drop),
   };
+}
+
+/** `grouping_key`는 내지 않는다 — 기계 키는 화면의 것이 아니다 (docs/read-api.md §2.5) */
+function toDrop(row: DropGroup): Drop {
+  return { id: row.id, kind: row.kind, date: row.primaryDate, title: row.title };
 }
 
 function toSchedule(row: ItemCurrentSchedule): Schedule {

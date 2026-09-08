@@ -16,6 +16,7 @@
 - 세 응답이 공유하는 형태는 `Card` 하나다 (§2). 화면이 알아야 하는 것은 「뱃지와 날짜」뿐이다
 - **뱃지 판정은 화면이 한다.** API는 `status`와 유효 예정 `schedules[]`를 **가공 없이** 준다 (§2.3)
 - **섹션 판정은 API가 한다.** 홈 3섹션 · 아카이브의 소속은 서버가 정한다 (§3, §5)
+- **발표 단위 접기** — 캘린더는 API가 사건을 접어 준다 (§4.0). 홈은 카드 그대로 주고 화면이 `Card.drop`으로 접는다 (§3.4)
 - **게시 게이트**가 모든 응답에 걸린다. 허가 없는 소스의 `item`은 애초에 나오지 않는다 (§6)
 
 ---
@@ -79,6 +80,7 @@ interface Card {
   restockedAt: string | null;     // 가장 최근 ENDED → ON_SALE 전이 시각. 📦 再入荷 뱃지의 근거
   schedules: Schedule[];          // 유효 예정 전부. 같은 kind가 2건 이상일 수 있다 (§2.3)
   sources: SourceRef[];           // 출처 표기 ([[plan]] §6.8). 1건 이상
+  drop: Drop | null;              // 소속 발표 (§2.5). null = 묶이지 않았다 — 단독으로 낸다
 }
 ```
 
@@ -124,6 +126,23 @@ interface SourceRef {
 게시 게이트(§6)를 지나온 소스만 있으므로 `sources[]`의 소스는 전부 허가된 소스다 —
 밝힐 수 없는 경로는 목록에 없다.
 
+### 2.5 `Drop` — 소속 발표 1건
+
+```ts
+interface Drop {
+  id: string;
+  kind: 'preorder' | 'release' | 'restock' | 'campaign';
+  date: string | null;            // 대표 JST 달력일. 수동 묶음은 없을 수 있다
+  title: string | null;           // 컬렉션 title. 날짜+브랜드 묶음은 null ([[db-schema]] §6)
+}
+```
+
+`drop_group` 행 그대로다. **같은 `drop.id`의 카드는 같은 발표에서 나온 것**이고, 화면은 이것으로
+섹션 안에서 카드를 접는다 (§3.4). `title`이 `null`이면 화면이 브랜드 · 날짜 · `kind`로 이름을 만든다 —
+「ちいかわマーケット 9/18 発売」. `id`나 `grouping_key`를 이름으로 내지 않는다.
+
+`brand`가 `null`인 카드는 `drop`도 `null`이다 — 미판정끼리 날짜만으로 묶지 않는다 ([[db-schema]] §6).
+
 ---
 
 ## 3. `GET /home` — 홈 3섹션
@@ -166,6 +185,17 @@ interface HomeResponse {
 채널 · 브랜드 · ランダム除く · オンラインのみ는 **클라이언트 로컬 필터**다 (`fe/CLAUDE.md` §4).
 쿼리 파라미터를 받지 않는다. 카드에 `channel` · `brand` · `acquisition` · `region`이 있으므로 화면이 거른다.
 
+### 3.4 홈은 접지 않는다 — 카드 단위 그대로
+
+섹션 배열은 **카드 1건 = 1원소**다. 발표 단위로 접는 것은 화면이 `Card.drop`으로 한다 —
+필터(§3.3)가 카드 단위라 접기가 필터 **뒤**에 와야 하기 때문이다. API가 접어 주면 필터가 묶음을 반쯤
+비운 뒤의 건수를 화면이 다시 세야 한다.
+
+화면의 접기 규칙: 같은 섹션 안에서 같은 `drop.id`인 카드를 처음 나온 자리에 모으고
+「〈브랜드〉 〈날짜〉 〈kind〉 · N点」으로 낸다. **N은 그 섹션 · 그 필터에서 보이는 건수**다 —
+발표 전체 건수가 아니다. 한 발표의 카드가 섹션을 넘나든다(일부 完売)는 것이 그 이유다.
+`drop`이 `null`인 카드는 접지 않는다.
+
 ---
 
 ## 4. `GET /calendar` — 사건
@@ -187,15 +217,29 @@ interface CalendarResponse {
   today: string;
   from: string;
   to: string;
-  events: CalendarEvent[];        // date 오름차순 → channel → title
+  events: CalendarEvent[];        // 정렬은 §4.1
 }
 
 interface CalendarEvent {
   date: string;                   // JST 달력일. 이 날에 무엇이 있는가
   kind: 'preorder' | 'release' | 'restock';
-  item: Card;
+  brand: { code: string; label: string } | null;  // 접기 키. null = 미판정 → items는 1건
+  items: Card[];                  // 1건 이상. title → id 순
 }
 ```
+
+### 4.0 사건은 발표 단위로 접는다 (2026-09-07)
+
+한 사건 = **같은 날짜 · 같은 `kind` · 같은 채널 · 같은 브랜드**의 카드 전부다. 「9/18 発売 51点」이 1행이다.
+`brand`가 `null`이면 접지 않는다 — `items`는 1건이다. 미판정끼리 날짜만으로 묶으면 관계없는 굿즈가
+한 발표가 된다 ([[db-schema]] §6).
+
+**`Card.drop`이 아니라 이 식으로 접는 이유** — `drop`은 그 굿즈가 **처음 나온 발표**다. 재입고는
+발표가 아니라 전이(`ENDED → ON_SALE`)라서, 8/27에 함께 재입고된 81건은 원래 발표(`drop`)가 제각각이다.
+`drop`으로 접으면 「8/27 再入荷」가 발표 수만큼 갈라진다. 이 식은 [[db-schema]] §6의 2순위
+(`날짜 + 브랜드 + kind`)를 **사건에** 적용한 것이고, 예약 · 발매 사건에서는 `drop`과 일치한다.
+`title`은 카드의 `drop.title`이 전부 같고 `null`이 아닐 때만 그것을 쓴다. 아니면 화면이
+「〈브랜드〉 〈kind〉 N点」으로 만든다.
 
 ### 4.1 사건의 출처
 
@@ -209,7 +253,8 @@ interface CalendarEvent {
 **날짜가 확정된 것만 놓는다.** `9月下旬`은 캘린더에 놓을 자리가 없다 — 홈 `waitable`에만 나온다.
 
 「날짜 안에서 채널로 묶기」는 화면이 한다. 정렬을 그 순서로 주므로 순회하며 그룹을 끊으면 된다.
-채널 순서는 `Channel` 유니온의 선언 순서다.
+채널 순서는 `Channel` 유니온의 선언 순서다. 채널 안에서는 **접힌 사건(`items` 2건 이상)이 먼저**,
+그 다음 첫 카드 `title` 순 — 「51点」 한 줄이 개별 행들 사이에 묻히지 않게.
 
 ---
 

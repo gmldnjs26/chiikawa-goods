@@ -6,14 +6,9 @@ import { addDays, fromJstMidnight, toJstCalendarDate } from '@/modules/_common/j
 import { Item } from '@/modules/items/entities/item.entity';
 
 import { AssembledCard, CardAssemblerService } from './card-assembler.service';
-import type {
-  ArchiveResponse,
-  CalendarEvent,
-  CalendarResponse,
-  Card,
-  HomeResponse,
-} from './dto/card.dto';
+import type { ArchiveResponse, CalendarResponse, Card, HomeResponse } from './dto/card.dto';
 import { ArchiveCursor, encodeCursor } from './utils/cursor';
+import { foldEvents, RawEvent } from './utils/fold-events';
 import {
   byDateThenId,
   compareEvents,
@@ -135,12 +130,10 @@ export class CatalogService {
     const inRange = (date: string | null): date is string =>
       date !== null && date >= from && date <= to;
 
-    const events: CalendarEvent[] = [];
+    const raw: RawEvent[] = [];
     for (const { card, restockDates } of assembled) {
-      if (inRange(card.preorderOn))
-        events.push({ date: card.preorderOn, kind: 'preorder', item: card });
-      if (inRange(card.releaseOn))
-        events.push({ date: card.releaseOn, kind: 'release', item: card });
+      if (inRange(card.preorderOn)) raw.push({ date: card.preorderOn, kind: 'preorder', card });
+      if (inRange(card.releaseOn)) raw.push({ date: card.releaseOn, kind: 'release', card });
 
       // 재입고: 예고(유효 예정, 날짜 있는 것)와 실제(이력). 같은 날이면 한 번
       const restockDays = new Set<string>();
@@ -148,15 +141,16 @@ export class CatalogService {
         if (schedule.kind === 'restock' && inRange(schedule.date)) restockDays.add(schedule.date);
       }
       for (const date of restockDates) if (inRange(date)) restockDays.add(date);
-      for (const date of restockDays) events.push({ date, kind: 'restock', item: card });
+      for (const date of restockDays) raw.push({ date, kind: 'restock', card });
     }
 
+    // 발표 단위로 접는다 (§4.0). 「9/18 発売 51点」이 1행이다
     return {
       generatedAt: now.toISOString(),
       today: toJstCalendarDate(now),
       from,
       to,
-      events: events.sort(compareEvents),
+      events: foldEvents(raw).sort(compareEvents),
     };
   }
 

@@ -30,6 +30,7 @@ function card(id: string, over: Partial<Card> = {}): Card {
     restockedAt: null,
     schedules: [],
     sources: [],
+    drop: null,
     ...over,
   };
 }
@@ -77,23 +78,38 @@ describe('byDateThenId', () => {
 });
 
 describe('compareEvents', () => {
-  it('date → channel 선언 순서 → title', () => {
-    const at = (date: string, channel: Card['channel'], title: string): CalendarEvent => ({
-      date,
-      kind: 'release',
-      item: card('1', { channel, title }),
-    });
+  const at = (date: string, channel: Card['channel'], title: string, count = 1): CalendarEvent => ({
+    date,
+    kind: 'release',
+    brand: null,
+    items: Array.from({ length: count }, (_, i) => card(String(i + 1), { channel, title })),
+  });
+  const label = (e: CalendarEvent) => `${e.date}/${e.items[0].channel}/${e.items[0].title}`;
+
+  it('date → channel 선언 순서 → 첫 카드 title', () => {
     const sorted = [
       at('2026-09-02', 'online_official', 'a'),
       at('2026-09-01', 'kuji', 'a'),
       at('2026-09-01', 'online_official', 'b'),
       at('2026-09-01', 'online_official', 'a'),
     ].sort(compareEvents);
-    expect(sorted.map((e) => `${e.date}/${e.item.channel}/${e.item.title}`)).toEqual([
+    expect(sorted.map(label)).toEqual([
       '2026-09-01/online_official/a',
       '2026-09-01/online_official/b',
       '2026-09-01/kuji/a',
       '2026-09-02/online_official/a',
+    ]);
+  });
+
+  // 「51点」 한 줄이 개별 행들 사이에 묻히지 않게
+  it('같은 채널 안에서는 접힌 사건이 먼저다', () => {
+    const sorted = [
+      at('2026-09-01', 'online_official', 'a'),
+      at('2026-09-01', 'online_official', 'z', 3),
+    ].sort(compareEvents);
+    expect(sorted.map(label)).toEqual([
+      '2026-09-01/online_official/z',
+      '2026-09-01/online_official/a',
     ]);
   });
 });
