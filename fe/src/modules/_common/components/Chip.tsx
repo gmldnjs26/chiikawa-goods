@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn';
 
-import { UNKNOWN_BRAND_LABEL } from '../consts';
+import { UNKNOWN_BRAND_LABEL, UNKNOWN_SERIES_LABEL } from '../consts';
 
 /**
  * 브랜드 칩 — 테두리만. null은 `その他`로 **보여준다** (docs/plan.md §6.6).
@@ -26,6 +26,28 @@ export function BrandChip({
       )}
     >
       {brand === null ? UNKNOWN_BRAND_LABEL : brand.label}
+    </span>
+  );
+}
+
+/**
+ * 시리즈 칩 (`映画ちいかわ`) — 무채 테두리, 브랜드 칩과 같은 급 (디자인 플랜 7c). 색을 주지 않는다.
+ * null은 「시리즈 없음」 = `その他`, 점선 — 「아직 모르는 것」 문법.
+ */
+export function SeriesChip({ series, muted = false }: { series: string | null; muted?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-md px-1.5 text-xs leading-5 whitespace-nowrap',
+        series === null ? 'border border-dashed' : 'border',
+        muted
+          ? 'border-separator text-label-tertiary'
+          : series === null
+            ? 'border-label-tertiary text-label-secondary'
+            : 'border-border text-label',
+      )}
+    >
+      {series ?? UNKNOWN_SERIES_LABEL}
     </span>
   );
 }

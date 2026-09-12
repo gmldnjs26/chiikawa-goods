@@ -46,7 +46,8 @@
         "kind": "release",
         "date": "2026-08-01",
         "title": null
-      }
+      },
+      "series": []
     },
     {
       "id": "402",
@@ -85,7 +86,8 @@
         "kind": "release",
         "date": "2026-07-18",
         "title": null
-      }
+      },
+      "series": []
     },
     {
       "id": "403",
@@ -139,7 +141,8 @@
         "kind": "release",
         "date": "2026-07-10",
         "title": null
-      }
+      },
+      "series": []
     },
     {
       "id": "404",
@@ -178,7 +181,8 @@
         "kind": "release",
         "date": "2026-07-05",
         "title": null
-      }
+      },
+      "series": []
     }
   ],
   "nextCursor": "MjAyNi0wOC0wMVQwMjowMDowMC4wMDBafDQwNA"

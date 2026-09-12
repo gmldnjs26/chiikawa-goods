@@ -6,7 +6,7 @@
 | 상위 문서 | [[plan]] §3.2 (뱃지) · §6 (화면) / `.claude/agents/frontend-dev.md` (디자인 규약) |
 | 관련 문서 | [[read-api]] §2 (카드 데이터 형태) / `fe/CLAUDE.md` §6 (기술 제약의 근거) |
 | 범위 | **의뢰서.** 제품 사양의 진실은 상위 문서다. 여기는 그것을 디자이너가 읽을 수 있게 한 곳에 모은 것이다 |
-| 결과 | **플랜 v1 (2026-09-06) 수령 · 적용 완료.** v1.2: 이미지 자리 72→96px (사용자 수정, 코드 반영). Claude Design 프로젝트 「ちいかわグッズ タイムライン Design Plan」. 요약은 `.claude/agents/frontend-dev.md` §디자인. **v1.1** (2026-09-06): 「5 테마 전환」 절(Sun/Moon 버튼 · 원형 View Transition)을 DesignSync로 캔버스에 추가. **TURN 5·6 桜 방향** (2026-09-06~07, 사용자 작성 · 미적용 — 코드는 아직 v1.2): 손그림 선 + 캐릭터 상태색 + 채널 아이콘 7종 (5a·5b·6a~6d). 2026-09-07: 5a·6a·6c 섹션 마커를 손그림 원에서 lucide 아이콘으로 (DesignSync 반영, 스냅샷 갱신) |
+| 결과 | **플랜 v1 (2026-09-06) 수령 · 적용 완료.** v1.2: 이미지 자리 72→96px (사용자 수정, 코드 반영). Claude Design 프로젝트 「ちいかわグッズ タイムライン Design Plan」. 요약은 `.claude/agents/frontend-dev.md` §디자인. **v1.1** (2026-09-06): 「5 테마 전환」 절(Sun/Moon 버튼 · 원형 View Transition)을 DesignSync로 캔버스에 추가. **TURN 5·6 桜 방향** (2026-09-06~07, 사용자 작성 · 미적용 — 코드는 아직 v1.2): 손그림 선 + 캐릭터 상태색 + 채널 아이콘 7종 (5a·5b·6a~6d). 2026-09-07: 5a·6a·6c 섹션 마커를 손그림 원에서 lucide 아이콘으로 (DesignSync 반영, 스냅샷 갱신). **TURN 7** (2026-09-12, #20): 「접힌 발표」 절 7a·7b·7c — 대표 이미지 4장 스트립 + 시리즈 소그룹. 코드 반영 완료(v1 토큰) |
 | 동기화 | 스냅샷 `docs/design-plan.dc.html`. 읽기 · 쓰기 · 코드 반영 절차는 `.claude/skills/design-sync/SKILL.md` (`/design-sync`) |
 
 ## 0. 당신의 역할

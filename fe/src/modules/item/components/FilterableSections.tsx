@@ -1,6 +1,5 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 import { cn } from '@/lib/cn';
@@ -12,14 +11,7 @@ import {
   SectionHeader,
   type Tone,
 } from '@/modules/_common/components/Section';
-import {
-  CHANNEL_LABELS,
-  formatCount,
-  UNKNOWN_BRAND_CODE,
-  UNKNOWN_BRAND_LABEL,
-} from '@/modules/_common/consts';
-
-import { foldByDrop, type FoldedRow } from '../fold';
+import { CHANNEL_LABELS, UNKNOWN_BRAND_CODE, UNKNOWN_BRAND_LABEL } from '@/modules/_common/consts';
 
 /** 필터에 필요한 것만 + 서버가 그린 카드. 카드 본체는 서버 컴포넌트 그대로다 (fe/CLAUDE.md §1) */
 export interface FilterableCard {
@@ -28,8 +20,6 @@ export interface FilterableCard {
   readonly brandCode: string | null;
   readonly acquisition: Acquisition;
   readonly region: string;
-  /** 소속 발표. 같은 `id`끼리 접는다. 이름은 서버가 만들어 준다 (docs/read-api.md §3.4) */
-  readonly drop: { readonly id: string; readonly title: string } | null;
   readonly node: React.ReactNode;
 }
 
@@ -66,8 +56,7 @@ const EMPTY_FILTER: Filter = {
  * - 홈: `previewLimit`(5)까지만 보이고 넘치면 헤더의 `すべて ›`가 전용 페이지를 연다
  * - 전용 페이지: `pageSize`(30)씩 `もっと見る 残り N`. 서버 요청 없음 — 홈 응답이 전부 갖고 있다
  *
- * 필터 **뒤에** 같은 발표(`drop.id`)의 카드를 처음 나온 자리에 접는다 (docs/read-api.md §3.4).
- * 「N点」은 그 섹션 · 그 필터에서 보이는 건수다. 상한 · 残り는 행 단위로 센다 — 발표 하나가 한 행이다.
+ * 발표 단위로 접지 않는다 — 카드 전부 평평하게 (docs/read-api.md §3.4). 접는 건 캘린더뿐이다.
  */
 export function FilterableSections({
   sections,
@@ -146,11 +135,10 @@ export function FilterableSections({
 
       {sections.map((section) => {
         const visible = section.cards.filter((card) => passes(card, filter));
-        const folded = foldByDrop(visible);
-        const overflow = previewLimit !== undefined && folded.length > previewLimit;
+        const overflow = previewLimit !== undefined && visible.length > previewLimit;
         const limit = overflow ? previewLimit : shown;
-        const rows = folded.slice(0, limit);
-        const remaining = folded.length - rows.length;
+        const rows = visible.slice(0, limit);
+        const remaining = visible.length - rows.length;
         return (
           <section key={section.key} className="flex flex-col gap-3">
             <SectionHeader
@@ -178,10 +166,10 @@ export function FilterableSections({
               </EmptyState>
             ) : (
               <GroupedList>
-                {rows.map((row, index) => (
-                  <div key={row.kind === 'card' ? row.card.id : `drop-${row.cards[0].id}`}>
+                {rows.map((card, index) => (
+                  <div key={card.id}>
                     {index > 0 && <RowDivider />}
-                    {row.kind === 'card' ? row.card.node : <DropRow row={row} />}
+                    {card.node}
                   </div>
                 ))}
               </GroupedList>
@@ -199,41 +187,6 @@ export function FilterableSections({
           </section>
         );
       })}
-    </div>
-  );
-}
-
-/**
- * 접힌 발표 — 발표 이름 · 「N点」 머리줄, 첫 카드는 그대로 보이고 나머지는 `<details>`로 펼친다.
- * 카드 본체는 서버가 그린 노드 그대로다 — 뱃지 · 날짜 · 가격은 카드마다 다를 수 있다.
- */
-function DropRow({ row }: { row: Extract<FoldedRow<FilterableCard>, { kind: 'drop' }> }) {
-  const [first, ...rest] = row.cards;
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 px-3.5 pt-2.5 text-xs text-label-secondary">
-        <span className="font-semibold">{row.title}</span>
-        <span aria-hidden>·</span>
-        <span className="tabular-nums">{formatCount(row.cards.length)}</span>
-      </div>
-      {first.node}
-      <details className="group">
-        <summary className="-mt-1 flex min-h-11 cursor-pointer list-none items-center gap-1 px-3.5 text-sm font-semibold text-label [&::-webkit-details-marker]:hidden">
-          <ChevronDown
-            aria-hidden
-            className="size-4 text-label-tertiary transition-transform group-open:rotate-180 motion-reduce:transition-none"
-            strokeWidth={2}
-          />
-          <span className="group-open:hidden">他{formatCount(rest.length)}を表示</span>
-          <span className="hidden group-open:inline">閉じる</span>
-        </summary>
-        {rest.map((card) => (
-          <div key={card.id}>
-            <RowDivider />
-            {card.node}
-          </div>
-        ))}
-      </details>
     </div>
   );
 }

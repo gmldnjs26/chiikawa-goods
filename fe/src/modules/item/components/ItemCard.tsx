@@ -7,7 +7,7 @@ import {
   toJstCalendarDate,
 } from '@/lib/format';
 import type { Card, Schedule } from '@/lib/schema';
-import { BrandChip, InfoChip, SeriesLabel } from '@/modules/_common/components/Chip';
+import { BrandChip, InfoChip, SeriesChip, SeriesLabel } from '@/modules/_common/components/Chip';
 import {
   brandInitial,
   CHANNEL_LABELS,
@@ -73,6 +73,9 @@ export function ItemCard({ card, today }: { card: Card; today: string }) {
               <span>{CHANNEL_LABELS[card.channel]}</span>
               <span aria-hidden>·</span>
               <span>{regionLabel(card.region)}</span>
+              {card.series.map((series) => (
+                <SeriesChip key={series} series={series} muted={muted} />
+              ))}
               {card.labels.map((label) => (
                 <InfoChip key={label}>{label}</InfoChip>
               ))}

@@ -224,6 +224,7 @@ CREATE TABLE item (
   series_total  integer,         -- random일 때 총 종류 수
   region        text NOT NULL DEFAULT 'online',  -- online|national|tokyo|osaka|nagoya|...
   labels        text[] NOT NULL DEFAULT '{}',    -- '川越店限定','ハチワレ' 등 정보 라벨
+  series        text[] NOT NULL DEFAULT '{}',    -- 소속 시리즈 '映画ちいかわ'. 순서는 source.config.series_tags 순
 
   -- 상태 (현재값. 이력은 status_history)
   status        text NOT NULL,   -- CHECK: UPCOMING|ON_SALE|ENDED
@@ -262,6 +263,13 @@ CREATE INDEX ON item USING gin (labels);
 > [!note] `region`은 도시 단위까지 (`online` `national` `tokyo` `osaka` `nagoya` …)
 > 팝업·실점포가 대부분 대도시에 열리므로 도시 단위가 실용적이다.
 > v0에서 실제로 쓰이는 값은 `online`뿐이다.
+
+> [!note] `series`는 브랜드가 아니다 (2026-09-12, #20)
+> `映画ちいかわ` `ちいかわパーク` 같은 시리즈·콜라보. 브랜드(§5.1)는 스토어이고 시리즈는 그 안의 라인이다.
+> **묶음 키(§6)에 넣지 않는다** — 한 발표 안에 시리즈가 섞이므로 키에 넣으면 발표가 갈라진다.
+> 접힌 발표를 펼쳤을 때의 소제목과 카드 칩에 쓴다 ([[read-api]] §4.0). 배열인 이유는 두 시리즈에 걸친 상품이
+> 실재해서다(705건 중 8건). 첫 원소가 대표다. 룩업 테이블이 아니라 `source.config.series_tags`인 이유는
+> 판정 규칙이 태그 리터럴 일치 하나뿐이기 때문이다 — 브랜드처럼 규칙이 여럿이 되면 그때 테이블로 올린다.
 
 > [!warning] `region`과 `labels`를 혼동하지 않는다
 > `川越店限定` 상품은 **온라인에서 살 수 있다.** 지역 제약이 아니므로 `region`이 아니라 `labels`다.

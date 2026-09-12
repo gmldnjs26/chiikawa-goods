@@ -59,6 +59,7 @@ export function normalize(input: NormalizeInput): NormalizedItem {
     seriesTotal,
     region: config.default_region,
     labels: pickLabels(tags, config),
+    series: pickSeries(tags, config),
     status: status.value,
     statusConflict: status.conflict,
     priceUnparsed: variants.length > 0 && prices.length === 0,
@@ -103,6 +104,15 @@ export function pickLabels(tags: readonly string[], config: SourceConfig): strin
   return tags.filter((tag) => allowed.has(tag));
 }
 
+/**
+ * 시리즈는 `series_tags` 순서로 (docs/db-schema.md §5.2). 태그 순서가 아니라 config 순서인 이유 —
+ * 두 시리즈에 걸친 상품에서 「대표」가 실행마다 흔들리면 안 된다
+ */
+export function pickSeries(tags: readonly string[], config: SourceConfig): string[] {
+  const present = new Set(tags);
+  return config.series_tags.filter((series) => present.has(series));
+}
+
 function resolveAcquisition(fallback: string, seriesTotal: number | null): Acquisition {
   if (fallback === 'random' && seriesTotal !== null) return 'random';
   return 'fixed';
@@ -130,5 +140,7 @@ function text(value: unknown): string | null {
 }
 
 function stringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
 }

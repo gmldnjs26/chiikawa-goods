@@ -1,6 +1,6 @@
 import { sourceConfigSchema } from '@/modules/sources/dto/source-config.schema';
 
-import { judgeStatus, normalize, pickLabels } from './normalize';
+import { judgeStatus, normalize, pickLabels, pickSeries } from './normalize';
 
 /** 실제 시드값 (src/migrations/1787654400000-SeedChiikawamarket.ts) */
 const market = sourceConfigSchema.parse({
@@ -87,6 +87,16 @@ describe('normalize', () => {
   });
 
   // 화이트리스트 밖은 버린다. 破棄対象商品이 카드에 뜨면 안 된다
+  it('series는 series_tags 순서로. 태그 순서가 아니다', () => {
+    const config = sourceConfigSchema.parse({ series_tags: ['映画ちいかわ', 'まじかるちいかわ'] });
+    expect(pickSeries(['まじかるちいかわ', '映画ちいかわ', 'ぬいぐるみ'], config)).toEqual([
+      '映画ちいかわ',
+      'まじかるちいかわ',
+    ]);
+    // 규칙이 비면 비어 있다 — 채우지 않는다 (시드 config에는 series_tags가 없다)
+    expect(run({ tags: ['映画ちいかわ'] }).series).toEqual([]);
+  });
+
   it('labels는 화이트리스트에 있는 태그만', () => {
     expect(run({ tags: ['海外NG', '破棄対象商品', 'ちいかわ'] }).labels).toEqual(['海外NG']);
   });
@@ -140,7 +150,10 @@ describe('judgeStatus', () => {
 
   // 모순은 조용히 한쪽으로 정하지 않는다. 태그 체계 변경의 첫 징후다
   it('販売開始前인데 재고가 있으면 UPCOMING + 경보', () => {
-    expect(judgeStatus(['販売開始前'], true, market)).toEqual({ value: 'UPCOMING', conflict: true });
+    expect(judgeStatus(['販売開始前'], true, market)).toEqual({
+      value: 'UPCOMING',
+      conflict: true,
+    });
   });
 
   // もぐもぐ本舗에는 販売開始前이 없다. UPCOMING이 나오지 않는다

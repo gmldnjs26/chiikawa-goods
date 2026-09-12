@@ -133,6 +133,10 @@ export class Item {
   @Column({ type: 'text', array: true, default: () => `'{}'` })
   labels!: string[];
 
+  /** 소속 시리즈 `映画ちいかわ`. 브랜드도 묶음 키도 아니다 — 펼친 발표의 소제목 (§5.2) */
+  @Column({ type: 'text', array: true, default: () => `'{}'` })
+  series!: string[];
+
   @Column({ type: 'text' })
   status!: ItemStatus;
 

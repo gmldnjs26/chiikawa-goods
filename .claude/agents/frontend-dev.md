@@ -33,7 +33,7 @@ fe/src/
 ├── app/home-sections.tsx           홈 3섹션의 문안 · 조립. 홈과 전용 페이지가 같이 쓴다
 ├── app/globals.css                 시맨틱 토큰(라이트/다크) + @theme inline
 ├── modules/_common/                Chip · Section · NavTabs(밑줄 인디케이터 1개가 활성 탭으로 슬라이드) · ThemeToggle(Sun/Moon 2상태, View Transition 원형 전환, localStorage) · consts(채널 · 지역 · 예정 어휘 · 테마 키)
-├── modules/item/                   badge.ts · consts.ts(RESTOCK_BADGE_DAYS) · ItemCard · StatusBadge · SourceLinks · CardImage · FilterableSections(필터 뒤 `drop`으로 접기 · `<details>`) · ArchiveList
+├── modules/item/                   badge.ts · consts.ts(RESTOCK_BADGE_DAYS) · ItemCard · StatusBadge · SourceLinks · CardImage · FilterableSections · ArchiveList
 ├── modules/calendar/               month.ts · CalendarList(접힌 사건 「発売 51点」 · `<details>`) · MonthNav
 └── lib/                            schema.ts(zod) · api.ts · format.ts · cn.ts
 ```
@@ -53,8 +53,9 @@ fe/src/
 - 뱃지는 **상태 + 가장 가까운 예정**의 조합이다. 상태만으로 판정하지 않는다
 - 캘린더에는 **사건**을 놓는다. 같은 굿즈가 예약일·발매일에 두 번 나온다.
   날짜가 확정된 예정만 배치하고 `9月下旬`은 목록에만 낸다
-- **발표 단위로 접는다** (#16). 캘린더는 API가 접어 주고(`docs/read-api.md` §4.0), 홈은 필터 뒤에 `Card.drop`으로 접는다(§3.4).
+- **발표 단위로 접는 건 캘린더뿐** (#16 · #20). API가 접어 준다(`docs/read-api.md` §4.0). 홈은 카드 전부 평평하게(§3.4).
   접기 · 펼치기는 `<details>`다 — 클라이언트 상태를 만들지 않는다. 「N点」은 보이는 건수다
+- **캘린더의** 접힌 행에는 대표 이미지 4장(`ThumbStrip`), 펼치면 `series[0]` 소그룹 · 없는 것은 `その他` 마지막 (#20, 플랜 7a·7b). 시리즈는 묶음 키가 아니다
 - 필터는 채널 우선. 체크박스는 `ランダム除く` / `オンラインだけ` 2개 (`plan.md` §6.5)
 - 각 항목에 **출처 링크**를 낸다. 이게 기존 팬 블로그가 하지 않는 것이다
 

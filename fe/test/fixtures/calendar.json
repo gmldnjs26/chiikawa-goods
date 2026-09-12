@@ -38,7 +38,8 @@
               "observedAt": "2026-09-05T12:01:13.559Z"
             }
           ],
-          "drop": null
+          "drop": null,
+          "series": []
         }
       ]
     },
@@ -89,7 +90,10 @@
             "kind": "release",
             "date": "2026-09-04",
             "title": null
-          }
+          },
+          "series": [
+            "映画ちいかわ"
+          ]
         },
         {
           "id": "103",
@@ -130,7 +134,10 @@
             "kind": "release",
             "date": "2026-09-04",
             "title": null
-          }
+          },
+          "series": [
+            "映画ちいかわ"
+          ]
         }
       ]
     },
@@ -179,7 +186,10 @@
             "kind": "release",
             "date": "2026-09-05",
             "title": null
-          }
+          },
+          "series": [
+            "ちいかわパーク"
+          ]
         }
       ]
     },
@@ -228,7 +238,8 @@
             "kind": "release",
             "date": "2026-07-10",
             "title": null
-          }
+          },
+          "series": []
         }
       ]
     },
@@ -285,7 +296,8 @@
             "kind": "release",
             "date": "2026-09-06",
             "title": null
-          }
+          },
+          "series": []
         }
       ]
     },
@@ -349,7 +361,10 @@
             "kind": "preorder",
             "date": "2026-09-09",
             "title": null
-          }
+          },
+          "series": [
+            "ちいかわパーク"
+          ]
         }
       ]
     },
@@ -406,7 +421,8 @@
             "kind": "release",
             "date": "2026-09-13",
             "title": null
-          }
+          },
+          "series": []
         }
       ]
     },
@@ -463,7 +479,8 @@
             "kind": "release",
             "date": "2026-07-20",
             "title": null
-          }
+          },
+          "series": []
         }
       ]
     },
@@ -527,7 +544,10 @@
             "kind": "preorder",
             "date": "2026-09-09",
             "title": null
-          }
+          },
+          "series": [
+            "ちいかわパーク"
+          ]
         }
       ]
     }
