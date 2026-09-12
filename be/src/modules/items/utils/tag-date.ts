@@ -22,7 +22,10 @@ export function matchTagDates(tags: readonly string[], rule: unknown): CalendarD
     const regex = new RegExp(pattern);
 
     for (const tag of tags) {
-      const groups = regex.exec(tag)?.slice(1).filter((g) => g !== undefined);
+      const groups = regex
+        .exec(tag)
+        ?.slice(1)
+        .filter((g) => g !== undefined);
       if (groups === undefined || groups.length === 0) continue;
 
       const date = groups.length === 1 ? fromDigits(groups[0]) : fromParts(groups);

@@ -153,6 +153,7 @@ function toCard(
     acquisition: item.acquisition,
     seriesTotal: item.seriesTotal,
     labels: item.labels,
+    series: item.series,
     status: item.status,
     statusAt: item.statusAt.toISOString(),
     preorderOn: item.preorderOn,

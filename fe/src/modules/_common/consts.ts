@@ -1,5 +1,4 @@
-import { formatDate } from '@/lib/format';
-import type { Channel, Drop, DropKind, ScheduleKind } from '@/lib/schema';
+import type { Channel, ScheduleKind } from '@/lib/schema';
 
 /**
  * 화면 어휘. 도메인 셋(홈 · 캘린더 · 아카이브)이 같이 쓰므로 `_common`에 있다 (fe/CLAUDE.md §2).
@@ -36,24 +35,6 @@ export const SCHEDULE_KIND_LABELS: Readonly<Record<ScheduleKind, string>> = {
   restock: '再入荷',
 };
 
-export const DROP_KIND_LABELS: Readonly<Record<DropKind, string>> = {
-  ...SCHEDULE_KIND_LABELS,
-  campaign: 'キャンペーン',
-};
-
-/**
- * 발표 이름 (docs/read-api.md §2.5 · §3.4). `title`이 있으면 그것 — 컬렉션 제목이다.
- * 없으면 브랜드 · 날짜 · kind로 만든다 — 「ちいかわマーケット 9/18 発売」. 기계 키(`id`)는 내지 않는다.
- * 브랜드 미판정 카드는 `drop`이 없으므로 여기 오지 않는다.
- */
-export function formatDropTitle(drop: Drop, brand: { label: string } | null): string {
-  if (drop.title !== null) return drop.title;
-  const parts = [brand?.label ?? UNKNOWN_BRAND_LABEL];
-  if (drop.date !== null) parts.push(formatDate(drop.date));
-  parts.push(DROP_KIND_LABELS[drop.kind]);
-  return parts.join(' ');
-}
-
 /** 「N点」. 접힌 발표의 건수 표기 — 보이는 건수다, 발표 전체가 아니다 (§3.4) */
 export function formatCount(count: number): string {
   return `${count}点`;
@@ -61,6 +42,8 @@ export function formatCount(count: number): string {
 
 /** 브랜드 미판정 표기 (docs/plan.md §6.6). 목록에서 빼지 않는다 */
 export const UNKNOWN_BRAND_LABEL = 'その他';
+/** 시리즈 없음 표기. 브랜드와 값이 같지만 따로 둔다 — 한쪽 문안을 바꿔도 다른 쪽이 따라가지 않게 */
+export const UNKNOWN_SERIES_LABEL = 'その他';
 /** 필터 칩에서 미판정 브랜드를 가리키는 키. 실제 brand code와 겹치지 않는 값 */
 export const UNKNOWN_BRAND_CODE = '_unknown';
 

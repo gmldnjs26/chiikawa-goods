@@ -3,7 +3,9 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatPrice, formatSeriesTotal, formatWeekday } from '@/lib/format';
 import type { CalendarEvent, Card, Channel, ScheduleKind } from '@/lib/schema';
+import { SeriesChip } from '@/modules/_common/components/Chip';
 import { EmptyState } from '@/modules/_common/components/Section';
+import { ThumbStrip } from '@/modules/_common/components/ThumbStrip';
 import {
   CHANNEL_LABELS,
   formatCount,
@@ -12,6 +14,7 @@ import {
   TIME_ESTIMATED_TITLE,
   UNKNOWN_BRAND_LABEL,
 } from '@/modules/_common/consts';
+import { groupBySeries, representativeImages } from '@/modules/_common/series';
 
 import { foldedEventTitle } from '../event-title';
 
@@ -215,42 +218,64 @@ function FoldedEvent({ event, past }: { event: CalendarEvent; past: boolean }) {
           </span>
         )}
       </summary>
-      <ul className="mt-1 flex flex-col">
-        {event.items.map((card) => {
-          const price = formatPrice(card.price, card.priceVaries);
-          return (
-            <li key={card.id} className="flex items-baseline justify-between gap-3 py-1 text-sm">
-              <a
-                href={card.officialUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+      <ThumbStrip
+        images={representativeImages(event.items)}
+        total={event.items.length}
+        className={cn('mt-1.5 mb-1 group-open:hidden', past && 'opacity-60')}
+      />
+      <div className="mt-1 flex flex-col gap-2">
+        {groupBySeries(event.items).map((group) => (
+          <div key={group.series ?? ''}>
+            <div className="flex items-center gap-2 text-xs">
+              <SeriesChip series={group.series} muted={past} />
+              <span
                 className={cn(
-                  'min-w-0 no-underline hover:underline',
-                  past ? 'text-ended' : 'text-label',
+                  'tabular-nums',
+                  past ? 'text-label-tertiary' : 'text-label-secondary',
                 )}
               >
-                {card.title}
-                {card.acquisition === 'random' && (
-                  <span className="ml-1.5 text-label-secondary">
-                    {formatSeriesTotal(card.seriesTotal)}
-                  </span>
-                )}
-              </a>
-              {price !== null && (
-                <span
-                  className={cn(
-                    'shrink-0 tabular-nums',
-                    past ? 'text-label-tertiary' : 'text-label-secondary',
-                  )}
-                >
-                  {price}
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                {group.cards.length}
+              </span>
+            </div>
+            <ul className="flex flex-col">
+              {group.cards.map((card) => (
+                <FoldedItem key={card.id} card={card} past={past} />
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </details>
+  );
+}
+
+/** 펼친 발표 안의 한 줄 — 상품명(링크) … 가격 */
+function FoldedItem({ card, past }: { card: Card; past: boolean }) {
+  const price = formatPrice(card.price, card.priceVaries);
+  return (
+    <li className="flex items-baseline justify-between gap-3 py-1 text-sm">
+      <a
+        href={card.officialUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn('min-w-0 no-underline hover:underline', past ? 'text-ended' : 'text-label')}
+      >
+        {card.title}
+        {card.acquisition === 'random' && (
+          <span className="ml-1.5 text-label-secondary">{formatSeriesTotal(card.seriesTotal)}</span>
+        )}
+      </a>
+      {price !== null && (
+        <span
+          className={cn(
+            'shrink-0 tabular-nums',
+            past ? 'text-label-tertiary' : 'text-label-secondary',
+          )}
+        >
+          {price}
+        </span>
+      )}
+    </li>
   );
 }
 

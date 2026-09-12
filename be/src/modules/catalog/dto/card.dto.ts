@@ -24,6 +24,8 @@ export interface Card {
   readonly acquisition: Acquisition;
   readonly seriesTotal: number | null;
   readonly labels: readonly string[];
+  /** 소속 시리즈. 첫 원소가 대표. 없으면 [] */
+  readonly series: readonly string[];
   readonly status: ItemStatus;
   readonly statusAt: string;
   readonly preorderOn: string | null;

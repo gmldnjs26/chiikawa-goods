@@ -75,6 +75,8 @@ export const sourceConfigSchema = z.object({
   label_tags_extra: z.array(z.string()).default([]),
   /** 라벨로 쓰지 않고 버리는 운영용 태그 */
   drop_tags: z.array(z.string()).default([]),
+  /** 시리즈 태그 리터럴. 배열 순서가 `item.series`의 순서 — 첫 원소가 대표 (docs/source-mapping.md §6) */
+  series_tags: z.array(z.string()).default([]),
 });
 
 export type SourceConfig = z.infer<typeof sourceConfigSchema>;

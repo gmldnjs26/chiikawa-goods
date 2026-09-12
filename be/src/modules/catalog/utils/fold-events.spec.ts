@@ -16,6 +16,7 @@ function card(over: Partial<Card> & { id: string }): Card {
     acquisition: 'fixed',
     seriesTotal: null,
     labels: [],
+    series: [],
     status: 'UPCOMING',
     statusAt: '',
     preorderOn: null,

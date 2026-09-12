@@ -25,6 +25,8 @@ export interface NormalizedItem {
   readonly seriesTotal: number | null;
   readonly region: string;
   readonly labels: string[];
+  /** 소속 시리즈. `source.config.series_tags` 순. 첫 원소가 대표 */
+  readonly series: string[];
   readonly status: ItemStatus;
   readonly preorderOn: CalendarDate | null;
   readonly releaseOn: CalendarDate | null;

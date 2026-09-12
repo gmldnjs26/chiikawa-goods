@@ -67,6 +67,8 @@ export const cardSchema = z.object({
   acquisition: acquisitionSchema,
   seriesTotal: z.number().int().nullable(),
   labels: z.array(z.string()),
+  /** 소속 시리즈. 첫 원소가 대표. 없으면 [] — 접힌 발표의 소그룹 · 카드 칩 */
+  series: z.array(z.string()),
   status: statusSchema,
   statusAt: z.string(),
   preorderOn: calendarDateSchema.nullable(),
